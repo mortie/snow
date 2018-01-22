@@ -7,11 +7,14 @@
 #define _TEST_COLOR_BOLD    "\033[1m"
 #define _TEST_COLOR_RESET   "\033[0m"
 
+static int test_exit_code = 0;
+
 #define fail(...) \
 	do { \
+		test_exit_code = 1; \
 		fprintf(stderr, \
 			_TEST_COLOR_BOLD _TEST_COLOR_FAIL "  %s✕ " \
-			_TEST_COLOR_RESET _TEST_COLOR_FAIL "Failed: " \
+			_TEST_COLOR_RESET _TEST_COLOR_FAIL "Failed:  " \
 			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s:\n  %s    " \
 			_TEST_COLOR_RESET, \
 			_test_spaces, _test_desc, _test_spaces); \

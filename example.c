@@ -63,4 +63,5 @@ describe(files, {
 
 int main() {
 	test_files();
+	return test_exit_code;
 }
