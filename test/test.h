@@ -17,21 +17,28 @@
 			_test_spaces, _test_desc, _test_spaces); \
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, \
-			"\n%s    at %s:%i\n", _test_spaces, __FILE__, __LINE__); \
+			"\n  %s    in %s:%s\n", _test_spaces, __FILE__, _test_name); \
 		goto _test_done; \
+	} while (0)
+
+#define assert(x) \
+	do { \
+		if (!(x)) { \
+			fail("Assertion failed: " #x); \
+		} \
 	} while (0)
 
 #define asserteq(a, b) \
 	do { \
 		if ((a) != (b)) { \
-			fail("Expected " #a " to equal " #b ", but got %i", b); \
+			fail("Expected " #a " to equal " #b ", but got %i", (b)); \
 		} \
 	} while (0)
 
 #define assertneq(a, b) \
 	do { \
 		if ((a) == (b)) { \
-			fail("Expected " #a " to not equal " #b ", but got %i", b); \
+			fail("Expected " #a " to not equal " #b ", but got %i", (b)); \
 		} \
 	} while (0)
 

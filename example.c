@@ -18,6 +18,10 @@ describe(files, {
 		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
 	});
 
+	it("breaks the rules of math", {
+		assert(1 == 2);
+	});
+
 	subdesc(fread, {
 		it("reads 10 bytes", {
 			FILE *f = fopen("/dev/zero", "r");
