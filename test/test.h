@@ -34,8 +34,8 @@ struct {
 		fprintf(stderr, \
 			_TEST_COLOR_BOLD _TEST_COLOR_FAIL "%s✕ " \
 			_TEST_COLOR_RESET _TEST_COLOR_FAIL "Failed:  " \
-			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s:\n%s    " \
-			_TEST_COLOR_RESET, \
+			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s" \
+			_TEST_COLOR_RESET ":\n%s    ", \
 			spaces, desc, spaces); \
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, \
