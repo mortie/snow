@@ -122,16 +122,18 @@ Fail if the expression `x` returns 0.
 
 ### asserteq(a, b)
 
-Fail unless `a == b`.
+Fail unless `a` equals `b`. If `b` is a string, `strcmp` will be used to check
+for equality; otherwise, `==` will be used.
+
+If you want to explicitly state whether you're working with scalars or
+strings (say you want to compare strings by pointer instead of by content), you
+can use the `asserteq_str` and `asserteq_int` macros.
 
 ### assertneq(a, b)
 
-Fail unless `a != b`.
+Fail if `a` equals `b`. If `b` is a string, `strcmp` will be used to check
+for equality; otherwise, `==` will be used.
 
-### assertstreq(a, b)
-
-Fail unless `strcmp(a, b) == 0`, 
-
-### assertstrneq(a, b)
-
-Fail unless `strcmp(a, b) != 0`.
+If you want to explicitly state whether you're working with scalars or
+strings (say you want to compare strings by pointer instead of by content), you
+can use the `asserteq_str` and `asserteq_int` macros.

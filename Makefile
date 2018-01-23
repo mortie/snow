@@ -1,7 +1,7 @@
 VGFLAGS ?= --quiet --leak-check=full --show-leak-kinds=all --track-origins=yes
 
 example: example.c test/test.h
-	$(CC) -g -Wall -o $@ $<
+	$(CC) $(CFLAGS) -g -Wall -o $@ $<
 
 test: example
 	valgrind $(VGFLAGS) ./example

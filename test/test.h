@@ -1,7 +1,12 @@
 #ifndef TEST_H
 #define TEST_H
 
+#ifndef __GNUC__
+#error "Your compiler doesn't support GNU extensions."
+#endif
+
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -17,7 +22,7 @@ static int _test_global_total = 0;
 static int _test_global_successes = 0;
 static int _test_num_defines = 0;
 
-#define fail(...) \
+#define _test_fail(desc, spaces, name, ...) \
 	do { \
 		_test_exit_code = 1; \
 		fprintf(stderr, \
@@ -25,10 +30,79 @@ static int _test_num_defines = 0;
 			_TEST_COLOR_RESET _TEST_COLOR_FAIL "Failed:  " \
 			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s:\n%s    " \
 			_TEST_COLOR_RESET, \
-			_test_spaces, _test_desc, _test_spaces); \
+			spaces, desc, spaces); \
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, \
-			"\n%s    in %s:%s\n", _test_spaces, __FILE__, _test_name); \
+			"\n%s    in %s:%s\n", spaces, __FILE__, name); \
+	} while (0)
+
+static int __attribute__((unused)) _test_asserteq_int(
+		const char *desc, const char *spaces, const char *name,
+		const char *astr, const char *bstr,
+		intmax_t a, intmax_t b)
+{
+	if (a != b)
+	{
+		_test_fail(
+			desc, spaces, name,
+			"Expected %s to equal %s, but got %ji",
+			astr, bstr, a);
+		return -1;
+	}
+	return 0;
+}
+
+static int __attribute__((unused)) _test_assertneq_int(
+		const char *desc, const char *spaces, const char *name,
+		const char *astr, const char *bstr,
+		intmax_t a, intmax_t b)
+{
+	if (a == b)
+	{
+		_test_fail(
+			desc, spaces, name,
+			"Expected %s to not equal %s",
+			astr, bstr);
+		return -1;
+	}
+	return 0;
+}
+
+static int __attribute__((unused)) _test_asserteq_str(
+		const char *desc, const char *spaces, const char *name,
+		const char *astr, const char *bstr,
+		const char *a, const char *b)
+{
+	if (strcmp(a, b) != 0)
+	{
+		_test_fail(
+			desc, spaces, name,
+			"Expected %s to equal %s, but got \"%s\"",
+			astr, bstr, a);
+		return -1;
+	}
+	return 0;
+}
+
+static int __attribute__((unused)) _test_assertneq_str(
+		const char *desc, const char *spaces, const char *name,
+		const char *astr, const char *bstr,
+		const char *a, const char *b)
+{
+	if (strcmp(a, b) == 0)
+	{
+		_test_fail(
+			desc, spaces, name,
+			"Expected %s to not equal %s",
+			astr, bstr);
+		return -1;
+	}
+	return 0;
+}
+
+#define fail(...) \
+	do { \
+		_test_fail(_test_desc, _test_spaces, _test_name, __VA_ARGS__); \
 		goto _test_done; \
 	} while (0)
 
@@ -39,40 +113,56 @@ static int _test_num_defines = 0;
 		} \
 	} while (0)
 
+#define asserteq_int(a, b) \
+	do { \
+		if (_test_asserteq_int(_test_desc, _test_spaces, _test_name, #a, #b, (a), (b)) < 0) \
+			goto _test_done; \
+	} while (0)
+
+#define assertneq_int(a, b) \
+	do { \
+		if (_test_assertneq_int(_test_desc, _test_spaces, _test_name, #a, #b, (a), (b)) < 0) \
+			goto _test_done; \
+	} while (0)
+
+#define asserteq_str(a, b) \
+	do { \
+		if (_test_asserteq_str(_test_desc, _test_spaces, _test_name, #a, #b, (a), (b)) < 0) \
+			goto _test_done; \
+	} while (0)
+
+#define assertneq_str(a, b) \
+	do { \
+		if (_test_assertneq_str(_test_desc, _test_spaces, _test_name, #a, #b, (a), (b)) < 0) \
+			goto _test_done; \
+	} while (0)
+
 #define asserteq(a, b) \
 	do { \
-		ssize_t _a = (ssize_t)(a); \
-		ssize_t _b = (ssize_t)(b); \
-		if (_a != _b) { \
-			fail("Expected " #a " to equal " #b ", but got %zi", _a); \
-		} \
+		int r = _Generic((b), \
+			char *: _test_asserteq_str( \
+				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+			const char *: _test_asserteq_str( \
+				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+			default: _test_asserteq_int( \
+					_test_desc, _test_spaces, _test_name, #a, #b, (intmax_t)a, (intmax_t)b) \
+		); \
+		if (r < 0) \
+			goto _test_done; \
 	} while (0)
 
 #define assertneq(a, b) \
 	do { \
-		ssize_t _a = (ssize_t)(a); \
-		ssize_t _b = (ssize_t)(b); \
-		if (_a == _b) { \
-			fail("Expected " #a " to not equal " #b); \
-		} \
-	} while (0)
-
-#define assertstreq(a, b) \
-	do { \
-		char *_a = (char *)(a); \
-		char *_b = (char *)(b); \
-		if (strcmp(_a, _b) != 0) { \
-			fail("Expected " #a " to equal " #b ", but got %s", _a); \
-		} \
-	} while (0)
-
-#define assertstrneq(a, b) \
-	do { \
-		char *_a = (char *)(a); \
-		char *_b = (char *)(b); \
-		if (strcmp(_a, _b) == 0) { \
-			fail("Expected " #a " to not equal " #b); \
-		} \
+		int r = _Generic((b), \
+			char *: _test_assertneq_str( \
+				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+			const char *: _test_assertneq_str( \
+				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+			default: _test_assertneq_int( \
+				_test_desc, _test_spaces, _test_name, #a, #b, (intmax_t)a, (intmax_t)b) \
+		); \
+		if (r < 0) \
+			goto _test_done; \
 	} while (0)
 
 #define _test_print_success() \
