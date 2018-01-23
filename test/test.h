@@ -7,20 +7,24 @@
 #define _TEST_COLOR_BOLD    "\033[1m"
 #define _TEST_COLOR_RESET   "\033[0m"
 
-static int test_exit_code = 0;
+static int _test_exit_code = 0;
+static int _test_first_define = 1;
+static int _test_global_total = 0;
+static int _test_global_successes = 0;
+static int _test_num_defines = 0;
 
 #define fail(...) \
 	do { \
-		test_exit_code = 1; \
+		_test_exit_code = 1; \
 		fprintf(stderr, \
-			_TEST_COLOR_BOLD _TEST_COLOR_FAIL "  %s✕ " \
+			_TEST_COLOR_BOLD _TEST_COLOR_FAIL "%s✕ " \
 			_TEST_COLOR_RESET _TEST_COLOR_FAIL "Failed:  " \
-			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s:\n  %s    " \
+			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s:\n%s    " \
 			_TEST_COLOR_RESET, \
 			_test_spaces, _test_desc, _test_spaces); \
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, \
-			"\n  %s    in %s:%s\n", _test_spaces, __FILE__, _test_name); \
+			"\n%s    in %s:%s\n", _test_spaces, __FILE__, _test_name); \
 		goto _test_done; \
 	} while (0)
 
@@ -34,21 +38,21 @@ static int test_exit_code = 0;
 #define asserteq(a, b) \
 	do { \
 		if ((a) != (b)) { \
-			fail("Expected " #a " to equal " #b ", but got %i", (b)); \
+			fail("Expected " #a " to equal " #b ", but got %zi", (ssize_t)(b)); \
 		} \
 	} while (0)
 
 #define assertneq(a, b) \
 	do { \
 		if ((a) == (b)) { \
-			fail("Expected " #a " to not equal " #b ", but got %i", (b)); \
+			fail("Expected " #a " to not equal " #b ", but got %zi", (ssize_t)(b)); \
 		} \
 	} while (0)
 
 #define _test_print_success() \
 	do { \
 		fprintf(stderr, \
-			_TEST_COLOR_BOLD _TEST_COLOR_SUCCESS "  %s✓ " \
+			_TEST_COLOR_BOLD _TEST_COLOR_SUCCESS "%s✓ " \
 			_TEST_COLOR_RESET _TEST_COLOR_SUCCESS "Success: " \
 			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s" \
 			_TEST_COLOR_RESET "\n", \
@@ -57,6 +61,10 @@ static int test_exit_code = 0;
 
 #define _test_print_run() \
 	do { \
+		if (_test_depth > 0 || _test_first_define) { \
+			fprintf(stderr, "\n"); \
+			_test_first_define = 0; \
+		} \
 		fprintf(stderr, _TEST_COLOR_BOLD "%sTesting %s:" _TEST_COLOR_RESET "\n", \
 			_test_spaces, _test_name); \
 	} while (0)
@@ -65,7 +73,7 @@ static int test_exit_code = 0;
 	do { \
 		fprintf(stderr, \
 			_TEST_COLOR_BOLD "%s%s: Passed %i/%i tests." \
-			_TEST_COLOR_RESET "\n", \
+			_TEST_COLOR_RESET "\n\n", \
 			_test_spaces, _test_name, _test_successes, _test_total); \
 	} while (0)
 
@@ -90,13 +98,14 @@ static int test_exit_code = 0;
 		__label__ _test_done; \
 		void *_test_labels[256]; \
 		int _test_labelcnt = 0; \
-		int _test_rundefer = 0; \
+		int __attribute__((unused)) _test_rundefer = 0; \
 		char *_test_desc = testdesc; \
 		_test_total += 1; \
 		block \
 		_test_successes += 1; \
 		_test_print_success(); \
 		_test_done: \
+		__attribute__((unused)); \
 		_test_rundefer = 1; \
 		_test_labelcnt -= 1; \
 		if (_test_labelcnt >= 0) { \
@@ -110,7 +119,7 @@ static int test_exit_code = 0;
 		int *_test_parent_successes = &_test_successes; \
 		int _test_parent_depth = _test_depth; \
 		char *_test_name = #testname; \
-		int _test_depth = _test_parent_depth + 1; \
+		int __attribute__((unused)) _test_depth = _test_parent_depth + 1; \
 		int _test_successes = 0; \
 		int _test_total = 0; \
 		char _test_spaces[_test_depth * 2 + 1]; \
@@ -126,14 +135,28 @@ static int test_exit_code = 0;
 
 #define describe(testname, block) \
 	static void test_##testname() { \
+		_test_num_defines += 1; \
 		char *_test_name = #testname; \
-		int _test_depth = 0; \
+		int __attribute__((unused)) _test_depth = 0; \
 		int _test_successes = 0; \
 		int _test_total = 0; \
 		const char *_test_spaces = ""; \
 		_test_print_run(); \
 		block \
 		_test_print_done(); \
+		_test_global_successes += _test_successes; \
+		_test_global_total += _test_total; \
 	}
+
+#define done() \
+	do { \
+		if (_test_num_defines > 1) { \
+			fprintf(stderr, \
+				_TEST_COLOR_BOLD "Total: Passed %i/%i tests.\n\n" \
+				_TEST_COLOR_RESET, \
+				_test_global_successes, _test_global_total); \
+		} \
+		return _test_exit_code; \
+	} while (0)
 
 #endif
