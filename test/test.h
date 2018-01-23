@@ -1,6 +1,9 @@
 #ifndef TEST_H
 #define TEST_H
 
+#include <stdio.h>
+#include <string.h>
+
 #define _TEST_COLOR_SUCCESS "\033[32m"
 #define _TEST_COLOR_FAIL    "\033[31m"
 #define _TEST_COLOR_DESC    "\033[1m\033[33m"
@@ -37,15 +40,37 @@ static int _test_num_defines = 0;
 
 #define asserteq(a, b) \
 	do { \
-		if ((a) != (b)) { \
-			fail("Expected " #a " to equal " #b ", but got %zi", (ssize_t)(b)); \
+		ssize_t _a = (ssize_t)(a); \
+		ssize_t _b = (ssize_t)(b); \
+		if (_a != _b) { \
+			fail("Expected " #a " to equal " #b ", but got %zi", _a); \
 		} \
 	} while (0)
 
 #define assertneq(a, b) \
 	do { \
-		if ((a) == (b)) { \
-			fail("Expected " #a " to not equal " #b ", but got %zi", (ssize_t)(b)); \
+		ssize_t _a = (ssize_t)(a); \
+		ssize_t _b = (ssize_t)(b); \
+		if (_a == _b) { \
+			fail("Expected " #a " to not equal " #b); \
+		} \
+	} while (0)
+
+#define assertstreq(a, b) \
+	do { \
+		char *_a = (char *)(a); \
+		char *_b = (char *)(b); \
+		if (strcmp(_a, _b) != 0) { \
+			fail("Expected " #a " to equal " #b ", but got %s", _a); \
+		} \
+	} while (0)
+
+#define assertstrneq(a, b) \
+	do { \
+		char *_a = (char *)(a); \
+		char *_b = (char *)(b); \
+		if (strcmp(_a, _b) == 0) { \
+			fail("Expected " #a " to not equal " #b); \
 		} \
 	} while (0)
 

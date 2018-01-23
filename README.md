@@ -99,6 +99,13 @@ reverse order of their definitions (i.e `defer(printf("World"));
 defer(printf("Hello "));` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
+### done()
+
+Must be called at the end of the main function. It will print the total count
+of total and successful tests (if there's more than one top-level description),
+and return with an appropriate exit code (0 if no tests failed, 1 if tests
+failed).
+
 ## Assert Macros
 
 ### fail(fmt, ...)
@@ -108,14 +115,20 @@ optionally followed by arguments, just like `printf`.
 
 ### assert(x)
 
-Fail if the expression `x` returns 0. `x` will only be evaluated once.
+Fail if the expression `x` returns 0.
 
 ### asserteq(a, b)
 
-Fail unless `a == b`. `a` will only be evaluated once, while `b` will be
-evaluated twice.
+Fail unless `a == b`.
 
 ### assertneq(a, b)
 
-Fail unless `a != b`. `a` will only be evaluated once, while `b` will be
-evaluated twice.
+Fail unless `a != b`.
+
+### assertstreq(a, b)
+
+Fail unless `strcmp(a, b) == 0`, 
+
+### assertstrneq(a, b)
+
+Fail unless `strcmp(a, b) != 0`.
