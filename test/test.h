@@ -125,7 +125,7 @@ static int test_exit_code = 0;
 	} while(0)
 
 #define describe(testname, block) \
-	void test_##testname() { \
+	static void test_##testname() { \
 		char *_test_name = #testname; \
 		int _test_depth = 0; \
 		int _test_successes = 0; \
