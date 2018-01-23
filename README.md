@@ -20,6 +20,9 @@ Some miscellaneous points:
   sure to not include any unguarded commas (commas outside of parentheses). The
   only case where I know that's relevant is in variable declarations like
   `int a, b, c;` - just make sure to use `int a; int b; int c;` instead.
+* The defer feature uses some GNU extensions, so testfw might not work with all
+  ISO C compatible compilers. It's confirmed to work with at least GCC and
+  Clang.
 
 ## Example
 

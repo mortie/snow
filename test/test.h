@@ -1,6 +1,7 @@
 #ifndef TEST_H
 #define TEST_H
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -147,13 +148,16 @@ static int _test_num_defines = 0;
 		int __attribute__((unused)) _test_depth = _test_parent_depth + 1; \
 		int _test_successes = 0; \
 		int _test_total = 0; \
-		char _test_spaces[_test_depth * 2 + 1]; \
+		/* Malloc because Clang doesn't like using a variable length
+		 * stack allocated array here, because dynamic gotos */ \
+		char *_test_spaces = malloc(_test_depth * 2 + 1); \
 		for (int i = 0; i < _test_depth * 2; ++i) \
 			_test_spaces[i] = ' '; \
 		_test_spaces[_test_depth * 2] = '\0'; \
 		_test_print_run(); \
 		block \
 		_test_print_done(); \
+		free(_test_spaces); \
 		*_test_parent_successes += _test_successes; \
 		*_test_parent_total += _test_total; \
 	} while(0)
