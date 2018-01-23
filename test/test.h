@@ -22,6 +22,12 @@ static int _test_global_total = 0;
 static int _test_global_successes = 0;
 static int _test_num_defines = 0;
 
+struct {
+	void **labels;
+	size_t size;
+	size_t count;
+} _test_labels = { NULL, 0, 0 };
+
 #define _test_fail(desc, spaces, name, ...) \
 	do { \
 		_test_exit_code = 1; \
@@ -199,21 +205,32 @@ static int __attribute__((unused)) _test_assertneq_str(
 		_test_defer_label: \
 		if (_test_rundefer) { \
 			expr; \
-			_test_labelcnt -= 1; \
-			if (_test_labelcnt >= 0) \
-				goto *_test_labels[_test_labelcnt]; \
+			/* Go to the previous defer, or the end of the `it` block */ \
+			if (_test_labels.count > 0) \
+				goto *_test_labels.labels[--_test_labels.count]; \
 			else \
 				goto _test_done; \
 		} else { \
-			_test_labels[_test_labelcnt++] = &&_test_defer_label; \
+			_test_labels.count += 1; \
+			/* Realloc labels array if necessary */ \
+			if (_test_labels.count >= _test_labels.size) { \
+				if (_test_labels.size == 0) \
+					_test_labels.size = 3; \
+				else \
+					_test_labels.size *= 2; \
+				_test_labels.labels = realloc( \
+					_test_labels.labels, \
+					_test_labels.size * sizeof(*_test_labels.labels)); \
+			} \
+			/* Add pointer to label to labels array */ \
+			_test_labels.labels[_test_labels.count - 1] = \
+				&&_test_defer_label; \
 		} \
 	} while (0)
 
 #define it(testdesc, block) \
 	do { \
 		__label__ _test_done; \
-		void *_test_labels[256]; \
-		int _test_labelcnt = 0; \
 		int __attribute__((unused)) _test_rundefer = 0; \
 		char *_test_desc = testdesc; \
 		_test_total += 1; \
@@ -223,9 +240,9 @@ static int __attribute__((unused)) _test_assertneq_str(
 		_test_done: \
 		__attribute__((unused)); \
 		_test_rundefer = 1; \
-		_test_labelcnt -= 1; \
-		if (_test_labelcnt >= 0) { \
-			goto *_test_labels[_test_labelcnt]; \
+		if (_test_labels.count > 0) { \
+			_test_labels.count -= 1; \
+			goto *_test_labels.labels[_test_labels.count]; \
 		} \
 	} while (0)
 
@@ -269,6 +286,7 @@ static int __attribute__((unused)) _test_assertneq_str(
 
 #define done() \
 	do { \
+		free(_test_labels.labels); \
 		if (_test_num_defines > 1) { \
 			fprintf(stderr, \
 				_TEST_COLOR_BOLD "Total: Passed %i/%i tests.\n\n" \

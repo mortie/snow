@@ -13,6 +13,7 @@ describe(files, {
 		assertneq(f, NULL);
 		defer(remove("testfile"));
 		defer(fclose(f));
+		int i = 0;
 
 		char *str = "hello there";
 		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
