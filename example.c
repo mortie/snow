@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include "test/test.h"
+#include <stdio.h>
 
 describe(files, {
 	it("opens files", {
