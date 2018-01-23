@@ -1,26 +1,26 @@
-# Testfw
+# Snow
 
-testfw is a testing framework for C, as a header-only library. The file
-[test/test.h](https://github.com/mortie/testfw/blob/master/test/test.h) should
+Snow is a testing framework for C, as a header-only library. The file
+[test/test.h](https://github.com/mortie/snow/blob/master/test/test.h) should
 be included from the main source file.
 
-Look at [example.c](https://github.com/mortie/testfw/blob/master/example.c) for an example.
+Look at [example.c](https://github.com/mortie/snow/blob/master/example.c) for an example.
 
-![Screenshot](https://raw.githubusercontent.com/mortie/testfw/master/img/screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/mortie/snow/master/img/screenshot.png)
 
 ## About
 
 Some miscellaneous points:
 
 * If your test suite consists of multiple files, the various `.c` files should
-  be included from the main source file, because testfw uses some static
+  be included from the main source file, because snow uses some static
   globals. Each `.c` file should probably still include `test.h` to help your
   editor out.
-* Becauste testfw is based on passing blocks to C preprocessor macros, make
+* Becauste snow is based on passing blocks to C preprocessor macros, make
   sure to not include any unguarded commas (commas outside of parentheses). The
   only case where I know that's relevant is in variable declarations like
   `int a, b, c;` - just make sure to use `int a; int b; int c;` instead.
-* The defer feature uses some GNU extensions, so testfw might not work with all
+* The defer feature uses some GNU extensions, so snow might not work with all
   ISO C compatible compilers. It's confirmed to work with at least GCC and
   Clang.
 
@@ -28,7 +28,7 @@ Some miscellaneous points:
 
 Here's a simple example which tests a couple of filesystem functions, and has a
 subdescription for testing fread-related stuff. It's very similar to the
-example in [example.c](https://github.com/mortie/testfw/blob/master/example.c).
+example in [example.c](https://github.com/mortie/snow/blob/master/example.c).
 
 	describe(files, {
 		it("opens files", {
