@@ -1,6 +1,6 @@
 # Snow
 
-Snow is a testing framework for C, as a header-only library. The file
+Snow is a header-only unit testing library for C. The file
 [test/test.h](https://github.com/mortie/snow/blob/master/test/test.h) should
 be included from the main source file.
 
