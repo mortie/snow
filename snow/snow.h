@@ -325,6 +325,8 @@ static int __attribute__((unused)) _snow_assertneq_str(
 	int main(int argc, char **argv) { \
 		if (!isatty(1)) \
 			_snow_opt_color = 0; \
+		else if (getenv("NO_COLOR") != NULL) \
+			_snow_opt_color = 0; \
 		for (int i = 1; i < argc; ++i) { \
 			if (strcmp(argv[i], "--color") == 0) \
 				_snow_opt_color = 1; \
