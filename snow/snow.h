@@ -28,7 +28,7 @@ struct {
 	size_t count;
 } _test_labels = { NULL, 0, 0 };
 
-#define _test_fail(desc, spaces, name, ...) \
+#define _test_fail(desc, spaces, name, file, ...) \
 	do { \
 		_test_exit_code = 1; \
 		fprintf(stderr, \
@@ -39,18 +39,18 @@ struct {
 			spaces, desc, spaces); \
 		fprintf(stderr, __VA_ARGS__); \
 		fprintf(stderr, \
-			"\n%s    in %s:%s\n", spaces, __FILE__, name); \
+			"\n%s    in %s:%s\n", spaces, file, name); \
 	} while (0)
 
 static int __attribute__((unused)) _test_asserteq_int(
-		const char *desc, const char *spaces, const char *name,
+		const char *desc, const char *spaces, const char *name, const char *file,
 		const char *astr, const char *bstr,
 		intmax_t a, intmax_t b)
 {
 	if (a != b)
 	{
 		_test_fail(
-			desc, spaces, name,
+			desc, spaces, name, file,
 			"Expected %s to equal %s, but got %ji",
 			astr, bstr, a);
 		return -1;
@@ -59,14 +59,14 @@ static int __attribute__((unused)) _test_asserteq_int(
 }
 
 static int __attribute__((unused)) _test_assertneq_int(
-		const char *desc, const char *spaces, const char *name,
+		const char *desc, const char *spaces, const char *name, const char *file,
 		const char *astr, const char *bstr,
 		intmax_t a, intmax_t b)
 {
 	if (a == b)
 	{
 		_test_fail(
-			desc, spaces, name,
+			desc, spaces, name, file,
 			"Expected %s to not equal %s",
 			astr, bstr);
 		return -1;
@@ -75,14 +75,14 @@ static int __attribute__((unused)) _test_assertneq_int(
 }
 
 static int __attribute__((unused)) _test_asserteq_str(
-		const char *desc, const char *spaces, const char *name,
+		const char *desc, const char *spaces, const char *name, const char *file,
 		const char *astr, const char *bstr,
 		const char *a, const char *b)
 {
 	if (strcmp(a, b) != 0)
 	{
 		_test_fail(
-			desc, spaces, name,
+			desc, spaces, name, file,
 			"Expected %s to equal %s, but got \"%s\"",
 			astr, bstr, a);
 		return -1;
@@ -91,14 +91,14 @@ static int __attribute__((unused)) _test_asserteq_str(
 }
 
 static int __attribute__((unused)) _test_assertneq_str(
-		const char *desc, const char *spaces, const char *name,
+		const char *desc, const char *spaces, const char *name, const char *file,
 		const char *astr, const char *bstr,
 		const char *a, const char *b)
 {
 	if (strcmp(a, b) == 0)
 	{
 		_test_fail(
-			desc, spaces, name,
+			desc, spaces, name, file,
 			"Expected %s to not equal %s",
 			astr, bstr);
 		return -1;
@@ -108,7 +108,7 @@ static int __attribute__((unused)) _test_assertneq_str(
 
 #define fail(...) \
 	do { \
-		_test_fail(_test_desc, _test_spaces, _test_name, __VA_ARGS__); \
+		_test_fail(_test_desc, _test_spaces, _test_name, __FILE__, __VA_ARGS__); \
 		goto _test_done; \
 	} while (0)
 
@@ -147,11 +147,11 @@ static int __attribute__((unused)) _test_assertneq_str(
 	do { \
 		int r = _Generic((b), \
 			char *: _test_asserteq_str( \
-				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+				_test_desc, _test_spaces, _test_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
 			const char *: _test_asserteq_str( \
-				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+				_test_desc, _test_spaces, _test_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
 			default: _test_asserteq_int( \
-					_test_desc, _test_spaces, _test_name, #a, #b, (intmax_t)a, (intmax_t)b) \
+				_test_desc, _test_spaces, _test_name, __FILE__, #a, #b, (intmax_t)a, (intmax_t)b) \
 		); \
 		if (r < 0) \
 			goto _test_done; \
@@ -161,11 +161,11 @@ static int __attribute__((unused)) _test_assertneq_str(
 	do { \
 		int r = _Generic((b), \
 			char *: _test_assertneq_str( \
-				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+				_test_desc, _test_spaces, _test_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
 			const char *: _test_assertneq_str( \
-				_test_desc, _test_spaces, _test_name, #a, #b, (const char *)a, (const char *)b), \
+				_test_desc, _test_spaces, _test_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
 			default: _test_assertneq_int( \
-				_test_desc, _test_spaces, _test_name, #a, #b, (intmax_t)a, (intmax_t)b) \
+				_test_desc, _test_spaces, _test_name, __FILE__, #a, #b, (intmax_t)a, (intmax_t)b) \
 		); \
 		if (r < 0) \
 			goto _test_done; \

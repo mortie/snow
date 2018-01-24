@@ -1,9 +1,9 @@
-#include "test/test.h"
+#include "snow/snow.h"
 #include <stdio.h>
 
 describe(files, {
 	it("opens files", {
-		FILE *f = fopen("test", "r");
+		FILE *f = fopen("Makefile", "r");
 		assertneq(f, NULL);
 		defer(fclose(f));
 	});
