@@ -106,12 +106,12 @@ _snow_decl_asserteq(int, intmax_t, "%ji")
 _snow_decl_assertneq(int, intmax_t)
 #define asserteq_int(a, b) \
 	do { \
-		if (_snow_asserteq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_asserteq_int(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq_int(a, b) \
 	do { \
-		if (_snow_assertneq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_assertneq_int(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -119,12 +119,12 @@ _snow_decl_asserteq(ptr, void *, "%p")
 _snow_decl_assertneq(ptr, void *)
 #define asserteq_ptr(a, b) \
 	do { \
-		if (_snow_asserteq_ptr(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_asserteq_ptr(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq_ptr(a, b) \
 	do { \
-		if (_snow_assertneq_ptr(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_assertneq_ptr(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -132,12 +132,12 @@ _snow_decl_asserteq(dbl, double, "%f");
 _snow_decl_assertneq(dbl, double);
 #define asserteq_dbl(a, b) \
 	do { \
-		if (_snow_asserteq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_asserteq_dbl(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq_dbl(a, b) \
 	do { \
-		if (_snow_assertneq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_assertneq_dbl(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -171,12 +171,12 @@ static int __attribute__((unused)) _snow_assertneq_str(
 }
 #define asserteq_str(a, b) \
 	do { \
-		if (_snow_asserteq_str(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_asserteq_str(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq_str(a, b) \
 	do { \
-		if (_snow_assertneq_str(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+		if (_snow_assertneq_str(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -218,12 +218,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 }
 #define asserteq_buf(a, b, n) \
 	do { \
-		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b), (n)) < 0) \
+		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b), (n)) < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq_buf(a, b, n) \
 	do { \
-		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b), (n)) < 0) \
+		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b), (n)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
