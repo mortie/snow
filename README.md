@@ -16,7 +16,7 @@ Some miscellaneous points:
   be included from the main source file, because snow uses some static
   globals. Each `.c` file should probably still include `test.h` to help your
   editor out.
-* Becauste snow is based on passing blocks to C preprocessor macros, make
+* Because snow is based on passing blocks to C preprocessor macros, make
   sure to not include any unguarded commas (commas outside of parentheses). The
   only case where I know that's relevant is in variable declarations like
   `int a, b, c;` - just make sure to use `int a; int b; int c;` instead.
