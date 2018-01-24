@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifndef SNOW_COLOR_SUCCESS
 #define SNOW_COLOR_SUCCESS "\033[32m"
@@ -31,6 +32,8 @@ static int _snow_global_total = 0;
 static int _snow_global_successes = 0;
 static int _snow_num_defines = 0;
 
+static int _snow_opt_color = 1;
+
 struct {
 	void **labels;
 	size_t size;
@@ -40,14 +43,20 @@ struct {
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
 		_snow_exit_code = 1; \
-		fprintf(stderr, \
-			_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "%s✕ " \
-			_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  " \
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-			_SNOW_COLOR_RESET ":\n%s    ", \
-			spaces, desc, spaces); \
-		fprintf(stderr, __VA_ARGS__); \
-		fprintf(stderr, \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
+				_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "%s✕ " \
+				_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  " \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
+				_SNOW_COLOR_RESET ":\n%s    ", \
+				spaces, desc, spaces); \
+		} else { \
+			fprintf(stdout, \
+				"%s✕ Failed:  %s:\n%s    ", \
+				spaces, desc, spaces); \
+		} \
+		fprintf(stdout, __VA_ARGS__); \
+		fprintf(stdout, \
 			"\n%s    in %s:%s\n", spaces, file, name); \
 	} while (0)
 
@@ -182,30 +191,49 @@ static int __attribute__((unused)) _snow_assertneq_str(
 
 #define _snow_print_success() \
 	do { \
-		fprintf(stderr, \
-			_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "%s✓ " \
-			_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-			_SNOW_COLOR_RESET "\n", \
-			_snow_spaces, _snow_desc); \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
+				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "%s✓ " \
+				_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
+				_SNOW_COLOR_RESET "\n", \
+				_snow_spaces, _snow_desc); \
+		} else { \
+			fprintf(stdout, \
+				"%s✓ Success: %s\n", \
+				_snow_spaces, _snow_desc); \
+		} \
 	} while (0)
 
 #define _snow_print_run() \
 	do { \
 		if (_snow_depth > 0 || _snow_first_define) { \
-			fprintf(stderr, "\n"); \
+			fprintf(stdout, "\n"); \
 			_snow_first_define = 0; \
 		} \
-		fprintf(stderr, _SNOW_COLOR_BOLD "%sTesting %s:" _SNOW_COLOR_RESET "\n", \
-			_snow_spaces, _snow_name); \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
+				_SNOW_COLOR_BOLD "%sTesting %s:" _SNOW_COLOR_RESET "\n", \
+				_snow_spaces, _snow_name); \
+		} else { \
+			fprintf(stdout, \
+				"%sTesting %s:\n", \
+				_snow_spaces, _snow_name); \
+		} \
 	} while (0)
 
 #define _snow_print_done() \
 	do { \
-		fprintf(stderr, \
-			_SNOW_COLOR_BOLD "%s%s: Passed %i/%i tests." \
-			_SNOW_COLOR_RESET "\n\n", \
-			_snow_spaces, _snow_name, _snow_successes, _snow_total); \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
+				_SNOW_COLOR_BOLD "%s%s: Passed %i/%i tests." \
+				_SNOW_COLOR_RESET "\n\n", \
+				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
+		} else { \
+			fprintf(stdout, \
+				"%s%s: Passed %i/%i tests.\n\n", \
+				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
+		} \
 	} while (0)
 
 #define defer(expr) \
@@ -293,16 +321,31 @@ static int __attribute__((unused)) _snow_assertneq_str(
 		_snow_global_total += _snow_total; \
 	}
 
-#define done() \
-	do { \
+#define snow_main(block) \
+	int main(int argc, char **argv) { \
+		if (!isatty(1)) \
+			_snow_opt_color = 0; \
+		for (int i = 1; i < argc; ++i) { \
+			if (strcmp(argv[i], "--color") == 0) \
+				_snow_opt_color = 1; \
+			else if (strcmp(argv[i], "--no-color") == 0) \
+				_snow_opt_color = 0; \
+		} \
+		block \
 		free(_snow_labels.labels); \
 		if (_snow_num_defines > 1) { \
-			fprintf(stderr, \
-				_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n\n" \
-				_SNOW_COLOR_RESET, \
-				_snow_global_successes, _snow_global_total); \
+			if (_snow_opt_color) { \
+				fprintf(stdout, \
+					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n\n" \
+					_SNOW_COLOR_RESET, \
+					_snow_global_successes, _snow_global_total); \
+			} else { \
+				fprintf(stdout, \
+					"Total: Passed %i/%i tests.\n\n", \
+					_snow_global_successes, _snow_global_total); \
+			} \
 		} \
 		return _snow_exit_code; \
-	} while (0)
+	}
 
 #endif

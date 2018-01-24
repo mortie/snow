@@ -61,7 +61,6 @@ describe(files, {
 	});
 });
 
-int main() {
+snow_main({
 	test_files();
-	done();
-}
+});

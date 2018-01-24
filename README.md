@@ -24,6 +24,14 @@ Some miscellaneous points:
   ISO C compatible compilers. It's confirmed to work with at least GCC and
   Clang.
 
+## Arguments
+
+Since you're not supposed to make your own main function, and instead use the
+`snow_main` macro, your binary will take these arguments:
+
+* **--color**: Force the use of color, even when stdout is not a TTY.
+* **--no-color**: Force colors to be disabled, evern when stdout is a TTY.
+
 ## Example
 
 Here's a simple example which tests a couple of filesystem functions, and has a
@@ -68,10 +76,9 @@ example in [example.c](https://github.com/mortie/snow/blob/master/example.c).
 		});
 	});
 
-	int main() {
+	snow_main({
 		test_files();
-		done();
-	}
+	});
 
 ## Structure Macros
 
@@ -102,12 +109,11 @@ reverse order of their definitions (i.e `defer(printf("World"));
 defer(printf("Hello "));` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
-### done()
+### snow\_main(block)
 
-Must be called at the end of the main function. It will print the total count
-of total and successful tests (if there's more than one top-level description),
-and return with an appropriate exit code (0 if no tests failed, 1 if tests
-failed).
+This macro expands to a main function which handless stuff like parsing
+arguments and freeing memory allocated by Snow. The `block` should just be
+calling the various functions defined by `describe`.
 
 ## Assert Macros
 
