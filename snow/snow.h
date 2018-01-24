@@ -10,9 +10,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#define _TEST_COLOR_SUCCESS "\033[32m"
-#define _TEST_COLOR_FAIL    "\033[31m"
-#define _TEST_COLOR_DESC    "\033[1m\033[33m"
+#ifndef TEST_COLOR_SUCCESS
+#define TEST_COLOR_SUCCESS "\033[32m"
+#endif
+
+#ifndef TEST_COLOR_FAIL
+#define TEST_COLOR_FAIL "\033[31m"
+#endif
+
+#ifndef TEST_COLOR_DESC
+#define TEST_COLOR_DESC "\033[1m\033[33m"
+#endif
+
 #define _TEST_COLOR_BOLD    "\033[1m"
 #define _TEST_COLOR_RESET   "\033[0m"
 
@@ -32,9 +41,9 @@ struct {
 	do { \
 		_test_exit_code = 1; \
 		fprintf(stderr, \
-			_TEST_COLOR_BOLD _TEST_COLOR_FAIL "%s✕ " \
-			_TEST_COLOR_RESET _TEST_COLOR_FAIL "Failed:  " \
-			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s" \
+			_TEST_COLOR_BOLD TEST_COLOR_FAIL "%s✕ " \
+			_TEST_COLOR_RESET TEST_COLOR_FAIL "Failed:  " \
+			_TEST_COLOR_RESET TEST_COLOR_DESC "%s" \
 			_TEST_COLOR_RESET ":\n%s    ", \
 			spaces, desc, spaces); \
 		fprintf(stderr, __VA_ARGS__); \
@@ -174,9 +183,9 @@ static int __attribute__((unused)) _test_assertneq_str(
 #define _test_print_success() \
 	do { \
 		fprintf(stderr, \
-			_TEST_COLOR_BOLD _TEST_COLOR_SUCCESS "%s✓ " \
-			_TEST_COLOR_RESET _TEST_COLOR_SUCCESS "Success: " \
-			_TEST_COLOR_RESET _TEST_COLOR_DESC "%s" \
+			_TEST_COLOR_BOLD TEST_COLOR_SUCCESS "%s✓ " \
+			_TEST_COLOR_RESET TEST_COLOR_SUCCESS "Success: " \
+			_TEST_COLOR_RESET TEST_COLOR_DESC "%s" \
 			_TEST_COLOR_RESET "\n", \
 			_test_spaces, _test_desc); \
 	} while (0)

@@ -13,14 +13,14 @@ Look at [example.c](https://github.com/mortie/snow/blob/master/example.c) for an
 Some miscellaneous points:
 
 * If your test suite consists of multiple files, the various `.c` files should
-  be included from the main source file, because snow uses some static
+  be included from the main source file, because Snow uses some static
   globals. Each `.c` file should probably still include `test.h` to help your
   editor out.
-* Because snow is based on passing blocks to C preprocessor macros, make
+* Because Snow is based on passing blocks to C preprocessor macros, make
   sure to not include any unguarded commas (commas outside of parentheses). The
   only case where I know that's relevant is in variable declarations like
   `int a, b, c;` - just make sure to use `int a; int b; int c;` instead.
-* The defer feature uses some GNU extensions, so snow might not work with all
+* The defer feature uses some GNU extensions, so Snow might not work with all
   ISO C compatible compilers. It's confirmed to work with at least GCC and
   Clang.
 
@@ -137,3 +137,13 @@ for equality; otherwise, `==` will be used.
 If you want to explicitly state whether you're working with scalars or
 strings (say you want to compare strings by pointer instead of by content), you
 can use the `asserteq_str` and `asserteq_int` macros.
+
+## Theming
+
+Snow allows for limited theming. Define `TEST_COLOR_SUCCESS`,
+`TEST_COLOR_FAIL`, and `TEST_COLOR_DESC` to
+[ANSI escape code](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors)
+strings to override the defaults.
+
+If you're redefining the macros after including the header, remember to
+`#undef` them defore defining them again, to avoid warning messages.
