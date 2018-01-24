@@ -60,63 +60,86 @@ struct {
 			"\n%s    in %s:%s\n", spaces, file, name); \
 	} while (0)
 
-static int __attribute__((unused)) _snow_asserteq_int(
-		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr, intmax_t a, intmax_t b)
-{
-	if (a != b)
-	{
-		_snow_fail(
-			desc, spaces, name, file,
-			"Expected %s to equal %s, but got %ji",
-			astr, bstr, a);
-		return -1;
-	}
-	return 0;
-}
-static int __attribute__((unused)) _snow_assertneq_int(
-		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr, intmax_t a, intmax_t b)
-{
-	if (a == b)
-	{
-		_snow_fail(
-			desc, spaces, name, file,
-			"Expected %s to not equal %s",
-			astr, bstr);
-		return -1;
-	}
-	return 0;
-}
+#define fail(...) \
+	do { \
+		_snow_fail(_snow_desc, _snow_spaces, _snow_name, __FILE__, __VA_ARGS__); \
+		goto _snow_done; \
+	} while (0)
 
-static int __attribute__((unused)) _snow_asserteq_dbl(
-		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr, double a, double b)
-{
-	if (a != b)
-	{
-		_snow_fail(
-			desc, spaces, name, file,
-			"Expected %s to equal %s, but got %f",
-			astr, bstr, a);
-		return -1;
+#define assert(x) \
+	do { \
+		if (!(x)) { \
+			fail("Assertion failed: " #x); \
+		} \
+	} while (0)
+
+#define _snow_decl_asserteq(suffix, type, fmt) \
+	static int __attribute__((unused)) _snow_asserteq_##suffix( \
+			const char *desc, const char *spaces, const char *name, const char *file, \
+			const char *astr, const char *bstr, type a, type b) \
+	{ \
+		if (a != b) { \
+			_snow_fail( \
+				desc, spaces, name, file, \
+				"Expected %s to equal %s, but got " fmt, \
+				astr, bstr, a); \
+			return -1; \
+		} \
+		return 0; \
 	}
-	return 0;
-}
-static int __attribute__((unused)) _snow_assertneq_dbl(
-		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr, double a, double b)
-{
-	if (a == b)
-	{
-		_snow_fail(
-			desc, spaces, name, file,
-			"Expected %s to not equal %s",
-			astr, bstr);
-		return -1;
+#define _snow_decl_assertneq(suffix, type) \
+	static int __attribute__((unused)) _snow_assertneq_##suffix( \
+			const char *desc, const char *spaces, const char *name, const char *file, \
+			const char *astr, const char *bstr, type a, type b) \
+	{ \
+		if (a == b) { \
+			_snow_fail( \
+				desc, spaces, name, file, \
+				"Expected %s to not equal %s", \
+				astr, bstr); \
+			return -1; \
+		} \
+		return 0; \
 	}
-	return 0;
-}
+
+_snow_decl_asserteq(int, intmax_t, "%ji")
+_snow_decl_assertneq(int, intmax_t)
+#define asserteq_int(a, b) \
+	do { \
+		if (_snow_asserteq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+#define assertneq_int(a, b) \
+	do { \
+		if (_snow_assertneq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+
+_snow_decl_asserteq(ptr, void *, "%p")
+_snow_decl_assertneq(ptr, void *)
+#define asserteq_ptr(a, b) \
+	do { \
+		if (_snow_asserteq_ptr(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+#define assertneq_ptr(a, b) \
+	do { \
+		if (_snow_assertneq_ptr(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+
+_snow_decl_asserteq(dbl, double, "%f");
+_snow_decl_assertneq(dbl, double);
+#define asserteq_dbl(a, b) \
+	do { \
+		if (_snow_asserteq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+#define assertneq_dbl(a, b) \
+	do { \
+		if (_snow_assertneq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
 
 static int __attribute__((unused)) _snow_asserteq_str(
 		const char *desc, const char *spaces, const char *name, const char *file,
@@ -146,42 +169,6 @@ static int __attribute__((unused)) _snow_assertneq_str(
 	}
 	return 0;
 }
-
-#define fail(...) \
-	do { \
-		_snow_fail(_snow_desc, _snow_spaces, _snow_name, __FILE__, __VA_ARGS__); \
-		goto _snow_done; \
-	} while (0)
-
-#define assert(x) \
-	do { \
-		if (!(x)) { \
-			fail("Assertion failed: " #x); \
-		} \
-	} while (0)
-
-#define asserteq_int(a, b) \
-	do { \
-		if (_snow_asserteq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
-			goto _snow_done; \
-	} while (0)
-#define assertneq_int(a, b) \
-	do { \
-		if (_snow_assertneq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
-			goto _snow_done; \
-	} while (0)
-
-#define asserteq_dbl(a, b) \
-	do { \
-		if (_snow_asserteq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
-			goto _snow_done; \
-	} while (0)
-#define assertneq_dbl(a, b) \
-	do { \
-		if (_snow_assertneq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
-			goto _snow_done; \
-	} while (0)
-
 #define asserteq_str(a, b) \
 	do { \
 		if (_snow_asserteq_str(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
@@ -190,6 +177,53 @@ static int __attribute__((unused)) _snow_assertneq_str(
 #define assertneq_str(a, b) \
 	do { \
 		if (_snow_assertneq_str(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+
+static int __attribute__((unused)) _snow_asserteq_buf(
+		const char *desc, const char *spaces, const char *name, const char *file,
+		const char *astr, const char *bstr, const void *a, const void *b, size_t n)
+{
+	const char *_a = (const char *)a;
+	const char *_b = (const char *)b;
+	for (size_t i = 0; i < n; ++i)
+	{
+		if (_a[i] != _b[i])
+		{
+			_snow_fail(
+				desc, spaces, name, file,
+				"Expected %s to equal %s, but they differ at byte %zi",
+				astr, bstr, i);
+			return -1;
+		}
+	}
+	return 0;
+}
+static int __attribute__((unused)) _snow_assertneq_buf(
+		const char *desc, const char *spaces, const char *name, const char *file,
+		const char *astr, const char *bstr, const void *a, const void *b, size_t n)
+{
+	const char *_a = (const char *)a;
+	const char *_b = (const char *)b;
+	for (size_t i = 0; i < n; ++i)
+	{
+		if (_a[i] != _b[i])
+			return 0;
+	}
+	_snow_fail(
+		desc, spaces, name, file,
+		"Expected %s to not equal %s",
+		astr, bstr);
+	return -1;
+}
+#define asserteq_buf(a, b, n) \
+	do { \
+		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b), (n)) < 0) \
+			goto _snow_done; \
+	} while (0)
+#define assertneq_buf(a, b, n) \
+	do { \
+		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b), (n)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -208,7 +242,6 @@ static int __attribute__((unused)) _snow_assertneq_str(
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
-
 #define assertneq(a, b) \
 	do { \
 		_Pragma("GCC diagnostic push") \

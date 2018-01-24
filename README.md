@@ -147,6 +147,14 @@ If you want to explicitly state what type your arguments are
 can use the `assertneq_int`, `assertneq_ptr`, `assertneq_dbl`, and `asserteq_str`
 macros.
 
+### asserteq\_buf(a, b, n)
+
+Fail unless the first `n` bytes of `a` and `b` are the same.
+
+### assertneq\_buf(a, b, n)
+
+Fail if the first `n` bytes of `a` and `b` are the same.
+
 ## Theming
 
 Snow allows for limited theming. Define `SNOW_COLOR_SUCCESS`,
