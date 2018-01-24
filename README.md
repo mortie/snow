@@ -16,13 +16,12 @@ Some miscellaneous points:
   be included from the main source file, because Snow uses some static
   globals. Each `.c` file should probably still include `snow.h` to help your
   editor out.
-* Because Snow is based on passing blocks to C preprocessor macros, make
-  sure to not include any unguarded commas (commas outside of parentheses). The
-  only case where I know that's relevant is in variable declarations like
-  `int a, b, c;` - just make sure to use `int a; int b; int c;` instead.
 * The defer feature uses some GNU extensions, so Snow might not work with all
   ISO C compatible compilers. It's confirmed to work with at least GCC and
   Clang.
+* Even though Snow is based on passing blocks to the C preprocessor macros,
+  unguarded commas are no problem, because the `block` argument is actually
+  implemented as `...` and expanded with `__VA_ARGS__`.
 
 ## Arguments
 

@@ -14,7 +14,7 @@ describe(files, {
 		defer(remove("testfile"));
 		defer(fclose(f));
 
-		char *str = "hello there";
+		char str[] = { 'h', 'e', 'y' }; // look ma, no guards
 		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
 	});
 

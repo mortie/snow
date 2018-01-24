@@ -334,13 +334,13 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 	} while (0)
 
-#define it(testdesc, block) \
+#define it(testdesc, ...) \
 	do { \
 		__label__ _snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		char *_snow_desc = testdesc; \
 		_snow_total += 1; \
-		block \
+		__VA_ARGS__ \
 		_snow_successes += 1; \
 		_snow_print_success(); \
 		_snow_done: \
@@ -352,7 +352,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 	} while (0)
 
-#define subdesc(testname, block) \
+#define subdesc(testname, ...) \
 	do { \
 		int *_snow_parent_total = &_snow_total; \
 		int *_snow_parent_successes = &_snow_successes; \
@@ -368,14 +368,14 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_spaces[i] = ' '; \
 		_snow_spaces[_snow_depth * 2] = '\0'; \
 		_snow_print_run(); \
-		block \
+		__VA_ARGS__ \
 		_snow_print_done(); \
 		free(_snow_spaces); \
 		*_snow_parent_successes += _snow_successes; \
 		*_snow_parent_total += _snow_total; \
 	} while(0)
 
-#define describe(testname, block) \
+#define describe(testname, ...) \
 	static void test_##testname() { \
 		_snow_num_defines += 1; \
 		char *_snow_name = #testname; \
@@ -384,13 +384,13 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int _snow_total = 0; \
 		const char *_snow_spaces = ""; \
 		_snow_print_run(); \
-		block \
+		__VA_ARGS__ \
 		_snow_print_done(); \
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
 	}
 
-#define snow_main(block) \
+#define snow_main(...) \
 	int main(int argc, char **argv) { \
 		if (!isatty(1)) \
 			_snow_opt_color = 0; \
@@ -402,7 +402,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			else if (strcmp(argv[i], "--no-color") == 0) \
 				_snow_opt_color = 0; \
 		} \
-		block \
+		__VA_ARGS__ \
 		free(_snow_labels.labels); \
 		if (_snow_num_defines > 1) { \
 			if (_snow_opt_color) { \
