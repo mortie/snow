@@ -19,6 +19,7 @@ describe(files, {
 	});
 
 	it("breaks the rules of math", {
+		assertneq(1.2, 1.2);
 		assert(1 == 2);
 	});
 

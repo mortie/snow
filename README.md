@@ -131,18 +131,20 @@ Fail if the expression `x` returns 0.
 Fail unless `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
 
-If you want to explicitly state whether you're working with scalars or
-strings (say you want to compare strings by pointer instead of by content), you
-can use the `asserteq_str` and `asserteq_int` macros.
+If you want to explicitly state what type your arguments are
+(say you want to compare strings by pointer instead of by content), you
+can use the `asserteq_int`, `asserteq_ptr`, `asserteq_dbl`, and `asserteq_str`
+macros.
 
 ### assertneq(a, b)
 
 Fail if `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
 
-If you want to explicitly state whether you're working with scalars or
-strings (say you want to compare strings by pointer instead of by content), you
-can use the `asserteq_str` and `asserteq_int` macros.
+If you want to explicitly state what type your arguments are
+(say you want to compare strings by pointer instead of by content), you
+can use the `assertneq_int`, `assertneq_ptr`, `assertneq_dbl`, and `asserteq_str`
+macros.
 
 ## Theming
 

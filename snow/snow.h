@@ -62,8 +62,7 @@ struct {
 
 static int __attribute__((unused)) _snow_asserteq_int(
 		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr,
-		intmax_t a, intmax_t b)
+		const char *astr, const char *bstr, intmax_t a, intmax_t b)
 {
 	if (a != b)
 	{
@@ -75,11 +74,38 @@ static int __attribute__((unused)) _snow_asserteq_int(
 	}
 	return 0;
 }
-
 static int __attribute__((unused)) _snow_assertneq_int(
 		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr,
-		intmax_t a, intmax_t b)
+		const char *astr, const char *bstr, intmax_t a, intmax_t b)
+{
+	if (a == b)
+	{
+		_snow_fail(
+			desc, spaces, name, file,
+			"Expected %s to not equal %s",
+			astr, bstr);
+		return -1;
+	}
+	return 0;
+}
+
+static int __attribute__((unused)) _snow_asserteq_dbl(
+		const char *desc, const char *spaces, const char *name, const char *file,
+		const char *astr, const char *bstr, double a, double b)
+{
+	if (a != b)
+	{
+		_snow_fail(
+			desc, spaces, name, file,
+			"Expected %s to equal %s, but got %f",
+			astr, bstr, a);
+		return -1;
+	}
+	return 0;
+}
+static int __attribute__((unused)) _snow_assertneq_dbl(
+		const char *desc, const char *spaces, const char *name, const char *file,
+		const char *astr, const char *bstr, double a, double b)
 {
 	if (a == b)
 	{
@@ -94,8 +120,7 @@ static int __attribute__((unused)) _snow_assertneq_int(
 
 static int __attribute__((unused)) _snow_asserteq_str(
 		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr,
-		const char *a, const char *b)
+		const char *astr, const char *bstr, const char *a, const char *b)
 {
 	if (strcmp(a, b) != 0)
 	{
@@ -107,11 +132,9 @@ static int __attribute__((unused)) _snow_asserteq_str(
 	}
 	return 0;
 }
-
 static int __attribute__((unused)) _snow_assertneq_str(
 		const char *desc, const char *spaces, const char *name, const char *file,
-		const char *astr, const char *bstr,
-		const char *a, const char *b)
+		const char *astr, const char *bstr, const char *a, const char *b)
 {
 	if (strcmp(a, b) == 0)
 	{
@@ -142,10 +165,20 @@ static int __attribute__((unused)) _snow_assertneq_str(
 		if (_snow_asserteq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
-
 #define assertneq_int(a, b) \
 	do { \
 		if (_snow_assertneq_int(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+
+#define asserteq_dbl(a, b) \
+	do { \
+		if (_snow_asserteq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
+			goto _snow_done; \
+	} while (0)
+#define assertneq_dbl(a, b) \
+	do { \
+		if (_snow_assertneq_dbl(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -154,7 +187,6 @@ static int __attribute__((unused)) _snow_assertneq_str(
 		if (_snow_asserteq_str(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
 			goto _snow_done; \
 	} while (0)
-
 #define assertneq_str(a, b) \
 	do { \
 		if (_snow_assertneq_str(_snow_desc, _snow_spaces, _snow_name, #a, #b, (a), (b)) < 0) \
@@ -163,28 +195,32 @@ static int __attribute__((unused)) _snow_assertneq_str(
 
 #define asserteq(a, b) \
 	do { \
+		_Pragma("GCC diagnostic push") \
+		_Pragma("GCC diagnostic ignored \"-Wint-conversion\"") \
 		int r = _Generic((b), \
-			char *: _snow_asserteq_str( \
-				_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
-			const char *: _snow_asserteq_str( \
-				_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
-			default: _snow_asserteq_int( \
-				_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (intmax_t)a, (intmax_t)b) \
-		); \
+			char *: _snow_asserteq_str, \
+			const char *: _snow_asserteq_str, \
+			float: _snow_asserteq_dbl, \
+			double: _snow_asserteq_dbl, \
+			default: _snow_asserteq_int \
+		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
+		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
 
 #define assertneq(a, b) \
 	do { \
+		_Pragma("GCC diagnostic push") \
+		_Pragma("GCC diagnostic ignored \"-Wint-conversion\"") \
 		int r = _Generic((b), \
-			char *: _snow_assertneq_str( \
-				_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
-			const char *: _snow_assertneq_str( \
-				_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (const char *)a, (const char *)b), \
-			default: _snow_assertneq_int( \
-				_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (intmax_t)a, (intmax_t)b) \
-		); \
+			char *: _snow_assertneq_str, \
+			const char *: _snow_assertneq_str, \
+			float: _snow_assertneq_dbl, \
+			double: _snow_assertneq_dbl, \
+			default: _snow_assertneq_int \
+		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
+		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
