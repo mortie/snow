@@ -1,7 +1,7 @@
 # Snow
 
 Snow is a header-only unit testing library for C. The file
-[test/test.h](https://github.com/mortie/snow/blob/master/test/test.h) should
+[snow/snow.h](https://github.com/mortie/snow/blob/master/snow/snow.h) should
 be included from the main source file.
 
 Look at [example.c](https://github.com/mortie/snow/blob/master/example.c) for an example.
@@ -14,7 +14,7 @@ Some miscellaneous points:
 
 * If your test suite consists of multiple files, the various `.c` files should
   be included from the main source file, because Snow uses some static
-  globals. Each `.c` file should probably still include `test.h` to help your
+  globals. Each `.c` file should probably still include `snow.h` to help your
   editor out.
 * Because Snow is based on passing blocks to C preprocessor macros, make
   sure to not include any unguarded commas (commas outside of parentheses). The
@@ -140,8 +140,8 @@ can use the `asserteq_str` and `asserteq_int` macros.
 
 ## Theming
 
-Snow allows for limited theming. Define `TEST_COLOR_SUCCESS`,
-`TEST_COLOR_FAIL`, and `TEST_COLOR_DESC` to
+Snow allows for limited theming. Define `SNOW_COLOR_SUCCESS`,
+`SNOW_COLOR_FAIL`, and `SNOW_COLOR_DESC` to
 [ANSI escape code](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors)
 strings to override the defaults.
 
