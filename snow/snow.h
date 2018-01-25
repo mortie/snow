@@ -6,6 +6,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -229,31 +230,29 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define asserteq(a, b) \
 	do { \
-		_Pragma("GCC diagnostic push") \
-		_Pragma("GCC diagnostic ignored \"-Wint-conversion\"") \
 		int r = _Generic((b), \
 			char *: _snow_asserteq_str, \
 			const char *: _snow_asserteq_str, \
 			float: _snow_asserteq_dbl, \
 			double: _snow_asserteq_dbl, \
-			default: _snow_asserteq_int \
+			default: _Generic((b) - (b), \
+				ptrdiff_t: _snow_asserteq_ptr, \
+				default: _snow_asserteq_int) \
 		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
-		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq(a, b) \
 	do { \
-		_Pragma("GCC diagnostic push") \
-		_Pragma("GCC diagnostic ignored \"-Wint-conversion\"") \
 		int r = _Generic((b), \
 			char *: _snow_assertneq_str, \
 			const char *: _snow_assertneq_str, \
 			float: _snow_assertneq_dbl, \
 			double: _snow_assertneq_dbl, \
-			default: _snow_assertneq_int \
+			default: _Generic((b) - (b), \
+				ptrdiff_t: _snow_assertneq_ptr, \
+				default: _snow_assertneq_int) \
 		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
-		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
