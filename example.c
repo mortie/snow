@@ -1,6 +1,6 @@
 #include "snow/snow.h"
 #include <stdio.h>
-
+snow({
 describe(files, {
 	it("opens files", {
 		FILE *f = fopen("Makefile", "r");
@@ -60,7 +60,4 @@ describe(files, {
 		});
 	});
 });
-
-snow_main({
-	test_files();
 });
