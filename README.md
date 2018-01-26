@@ -51,7 +51,7 @@ example in [example.c](https://github.com/mortie/snow/blob/master/example.c).
 			defer(remove("testfile"));
 			defer(fclose(f));
 
-			char *str = "hello there";
+			char str[] = "hello there";
 			asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
 		});
 
