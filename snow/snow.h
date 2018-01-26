@@ -375,7 +375,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	} while(0)
 
 #define describe(testname, ...) \
-	static void test_##testname() { \
+	void test_##testname() { \
 		_snow_num_defines += 1; \
 		char *_snow_name = #testname; \
 		int __attribute__((unused)) _snow_depth = 0; \
@@ -387,10 +387,15 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_print_done(); \
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
-	}
+	} \
+    described_functions[clause_counter++] = &test_##testname;
 
-#define snow_main(...) \
+
+#define snow(...) \
 	int main(int argc, char **argv) { \
+        int clause_counter = 0;\
+        void (*described_functions[512])();\
+        __VA_ARGS__ \
 		if (!isatty(1)) \
 			_snow_opt_color = 0; \
 		else if (getenv("NO_COLOR") != NULL) \
@@ -401,7 +406,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			else if (strcmp(argv[i], "--no-color") == 0) \
 				_snow_opt_color = 0; \
 		} \
-		__VA_ARGS__ \
+		for (int i = 0; i < clause_counter; i++) { \
+            described_functions[i](); \
+        }\
 		free(_snow_labels.labels); \
 		if (_snow_num_defines > 1) { \
 			if (_snow_opt_color) { \
