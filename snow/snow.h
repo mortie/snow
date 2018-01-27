@@ -27,19 +27,28 @@
 #define _SNOW_COLOR_BOLD    "\033[1m"
 #define _SNOW_COLOR_RESET   "\033[0m"
 
-static int _snow_exit_code = 0;
-static int _snow_first_define = 1;
-static int _snow_global_total = 0;
-static int _snow_global_successes = 0;
-static int _snow_num_defines = 0;
+extern int _snow_exit_code;
+extern int _snow_first_print;
+extern int _snow_global_total;
+extern int _snow_global_successes;
+extern int _snow_num_defines;
 
-static int _snow_opt_color = 1;
+extern int _snow_opt_color;
 
-struct {
+struct _snow_labels { 
 	void **labels;
 	size_t size;
 	size_t count;
-} _snow_labels = { NULL, 0, 0 };
+};
+extern struct _snow_labels _snow_labels;
+
+typedef void _snow_de_cb();
+struct _snow_describes { 
+	void (**describes)();
+	size_t size;
+	size_t count;
+};
+extern struct _snow_describes _snow_describes;
 
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
@@ -275,9 +284,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_run() \
 	do { \
-		if (_snow_depth > 0 || _snow_first_define) { \
+		if (_snow_depth > 0 || _snow_first_print) { \
 			fprintf(stdout, "\n"); \
-			_snow_first_define = 0; \
+			_snow_first_print = 0; \
 		} \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
@@ -320,7 +329,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			/* Realloc labels array if necessary */ \
 			if (_snow_labels.count >= _snow_labels.size) { \
 				if (_snow_labels.size == 0) \
-					_snow_labels.size = 3; \
+					_snow_labels.size = 16; \
 				else \
 					_snow_labels.size *= 2; \
 				_snow_labels.labels = realloc( \
@@ -387,9 +396,32 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_print_done(); \
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
+	} \
+	__attribute__((constructor)) \
+	static void _snow_constructor_##testname() { \
+		_snow_describes.count += 1; \
+		if (_snow_describes.count >= _snow_describes.size) { \
+			if (_snow_describes.size == 0) \
+				_snow_describes.size = 16; \
+			else \
+				_snow_describes.size *= 2; \
+			_snow_describes.describes = realloc( \
+				_snow_describes.describes, \
+				_snow_describes.size * sizeof(*_snow_describes.describes)); \
+		} \
+		_snow_describes.describes[_snow_describes.count - 1] = \
+			&test_##testname; \
 	}
 
-#define snow_main(...) \
+#define snow_main() \
+	int _snow_exit_code = 0; \
+	int _snow_first_print = 1; \
+	int _snow_global_total = 0; \
+	int _snow_global_successes = 0; \
+	int _snow_num_defines = 0; \
+	int _snow_opt_color = 1; \
+	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
+	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
 	int main(int argc, char **argv) { \
 		if (!isatty(1)) \
 			_snow_opt_color = 0; \
@@ -401,8 +433,11 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			else if (strcmp(argv[i], "--no-color") == 0) \
 				_snow_opt_color = 0; \
 		} \
-		__VA_ARGS__ \
+		for (int i = 0; i < _snow_describes.count; ++i) { \
+			_snow_describes.describes[i](); \
+		} \
 		free(_snow_labels.labels); \
+		free(_snow_describes.describes); \
 		if (_snow_num_defines > 1) { \
 			if (_snow_opt_color) { \
 				fprintf(stdout, \

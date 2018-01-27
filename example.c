@@ -61,6 +61,4 @@ describe(files, {
 	});
 });
 
-snow_main({
-	test_files();
-});
+snow_main();

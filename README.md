@@ -76,9 +76,7 @@ example in [example.c](https://github.com/mortie/snow/blob/master/example.c).
 		});
 	});
 
-	snow_main({
-		test_files();
-	});
+	snow_main();
 
 ## Structure Macros
 
@@ -86,7 +84,7 @@ example in [example.c](https://github.com/mortie/snow/blob/master/example.c).
 
 A top-level description of a component, which can contain `subdesc`s and `it`s.
 A `describe(testname, block)` will define a function `void test_##testname()`,
-which the main function should call.
+which the main function created by `snow_main` will call automatically.
 
 ### subdesc(testname, block)
 
@@ -109,11 +107,11 @@ reverse order of their definitions (i.e `defer(printf("World"));
 defer(printf("Hello "));` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
-### snow\_main(block)
+### snow\_main()
 
 This macro expands to a main function which handless stuff like parsing
-arguments and freeing memory allocated by Snow. The `block` should just be
-calling the various functions defined by `describe`.
+arguments and freeing memory allocated by Snow. All described functions will
+automatically be called by the main functions.
 
 ## Assert Macros
 
