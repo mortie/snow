@@ -4,7 +4,6 @@
 #ifdef SNOW_DISABLED
 
 #define describe(...)
-#define snow_main(...)
 
 #else
 

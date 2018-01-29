@@ -4,8 +4,6 @@ Snow is a header-only unit testing library for C. The file
 [snow/snow.h](https://github.com/mortie/snow/blob/master/snow/snow.h) should
 be included from the main source file.
 
-Look at [example.c](https://github.com/mortie/snow/blob/master/example.c) for an example.
-
 ![Screenshot](https://raw.githubusercontent.com/mortie/snow/master/img/screenshot.png)
 
 ## About
@@ -35,8 +33,7 @@ Since you're not supposed to make your own main function, and instead use the
 ## Example
 
 Here's a simple example which tests a couple of filesystem functions, and has a
-subdescription for testing fread-related stuff. It's very similar to the
-example in [example.c](https://github.com/mortie/snow/blob/master/example.c).
+subdescription for testing fread-related stuff.
 
 	describe(files, {
 		it("opens files", {
@@ -151,3 +148,35 @@ Fail unless the first `n` bytes of `a` and `b` are the same.
 ### assertneq\_buf(a, b, n)
 
 Fail if the first `n` bytes of `a` and `b` are the same.
+
+## How to test
+
+Exactly how to test your code might not be as obvious with C as it is for other
+languages. I haven't yet used Snow for any big projects, but here's how I would
+do it
+
+### Testing a library's interface
+
+When testing a library's interface, you can just create a `test` folder which
+is completely decoupled from the library's source code, and just compile your
+test code with a flag to link against your library.
+
+### Testing a program or library internals
+
+Testing anything that's not exposed as a library's public API is is possible
+because of the `SNOW_DISABLED` macro; if `SNOW_DISABLED` is defined, most of
+Snow's macros won't be defined, and `describe` will just be an empty macro
+which will disappear after the preprocessor. Therfore, you can include tests
+directly in your C source files, and compile non-test builds with the
+`-DSNOW_DISABLED` compiler argument.
+
+Since all test macros are compiled down to nothing, this will have no runtime
+performance or binary size impact.
+
+Note that since `snow.h` defines macros with pretty general names (`it`,
+`describe`, `assert`), it's probably a good idea to put your tests at the
+bottom of the source and only include `snow.h` right above the test code, to
+avoid name conflicts.
+
+The [exampleproject](https://github.com/mortie/snow/blob/master/exampleproject)
+directory is an example of a program tested this way.
