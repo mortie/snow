@@ -54,6 +54,10 @@ void *vector_get(vector *vec, size_t idx)
 	defer(vector_free(&name))
 
 describe(vector, {
+	it("breaks the rule of math (to demonstrate failed tests)", {
+		assert(1 == 2);
+	});
+
 	it("inits vectors correctly", {
 		setup(vec, 53);
 
@@ -75,36 +79,40 @@ describe(vector, {
 		memset(vec.elems, 0xff, 10 * vec.elem_size);
 	});
 
-	it("sets values inside of the allocated range", {
-		setup(vec, sizeof(int));
+	subdesc(vector_set, {
+		it("sets values inside of the allocated range", {
+			setup(vec, sizeof(int));
 
-		vector_alloc(&vec, 2);
-		int el = 10;
-		vector_set(&vec, 1, &el);
-		asserteq(*(int *)(vec.elems + sizeof(int)), 10);
+			vector_alloc(&vec, 2);
+			int el = 10;
+			vector_set(&vec, 1, &el);
+			asserteq(*(int *)(vec.elems + sizeof(int)), 10);
+		});
+
+		it("allocates space when setting values outside the allocated range", {
+			setup(vec, sizeof(int));
+
+			int el = 10;
+			vector_set(&vec, 50, &el);
+			asserteq(*(int *)(vec.elems + (sizeof(int) * 50)), 10);
+		});
 	});
 
-	it("allocates space when setting values outside the allocated range", {
-		setup(vec, sizeof(int));
+	subdesc(vector_get, {
+		it("gets values inside the allocated range", {
+			setup(vec, sizeof(int));
 
-		int el = 10;
-		vector_set(&vec, 50, &el);
-		asserteq(*(int *)(vec.elems + (sizeof(int) * 50)), 10);
-	});
+			int el = 500;
+			vector_set(&vec, 10, &el);
+			asserteq(*(int *)vector_get(&vec, 10), 500);
+		});
 
-	it("gets values inside the allocated range", {
-		setup(vec, sizeof(int));
+		it("returns NULL when trying to access values outside the allocated range", {
+			setup(vec, sizeof(int));
 
-		int el = 500;
-		vector_set(&vec, 10, &el);
-		asserteq(*(int *)vector_get(&vec, 10), 500);
-	});
-
-	it("returns NULL when trying to access values outside the allocated range", {
-		setup(vec, sizeof(int));
-
-		int el = 10;
-		vector_set(&vec, 100, &el);
-		asserteq(vector_get(&vec, 101), NULL);
+			int el = 10;
+			vector_set(&vec, 100, &el);
+			asserteq(vector_get(&vec, 101), NULL);
+		});
 	});
 });
