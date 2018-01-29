@@ -151,13 +151,3 @@ Fail unless the first `n` bytes of `a` and `b` are the same.
 ### assertneq\_buf(a, b, n)
 
 Fail if the first `n` bytes of `a` and `b` are the same.
-
-## Theming
-
-Snow allows for limited theming. Define `SNOW_COLOR_SUCCESS`,
-`SNOW_COLOR_FAIL`, and `SNOW_COLOR_DESC` to
-[ANSI escape code](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors)
-strings to override the defaults.
-
-If you're redefining the macros after including the header, remember to
-`#undef` them defore defining them again, to avoid warning messages.
