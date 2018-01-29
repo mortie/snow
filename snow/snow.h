@@ -1,6 +1,13 @@
 #ifndef SNOW_H
 #define SNOW_H
 
+#ifdef SNOW_DISABLED
+
+#define describe(...)
+#define snow_main(...)
+
+#else
+
 #ifndef __GNUC__
 #error "Your compiler doesn't support GNU extensions."
 #endif
@@ -433,7 +440,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			else if (strcmp(argv[i], "--no-color") == 0) \
 				_snow_opt_color = 0; \
 		} \
-		for (int i = 0; i < _snow_describes.count; ++i) { \
+		for (size_t i = 0; i < _snow_describes.count; ++i) { \
 			_snow_describes.describes[i](); \
 		} \
 		free(_snow_labels.labels); \
@@ -453,4 +460,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		return _snow_exit_code; \
 	}
 
-#endif
+#endif // SNOW_DISABLED
+
+#endif // SNOW_H
