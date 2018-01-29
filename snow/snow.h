@@ -34,7 +34,7 @@
 #define _SNOW_COLOR_RESET   "\033[0m"
 
 extern int _snow_exit_code;
-extern int _snow_first_print;
+extern int _snow_extra_newline;
 extern int _snow_global_total;
 extern int _snow_global_successes;
 extern int _snow_num_defines;
@@ -58,6 +58,7 @@ extern struct _snow_describes _snow_describes;
 
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
+		_snow_extra_newline = 1; \
 		_snow_exit_code = 1; \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
@@ -274,6 +275,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_success() \
 	do { \
+		_snow_extra_newline = 1; \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
 				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "%s✓ " \
@@ -290,9 +292,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_run() \
 	do { \
-		if (_snow_depth > 0 || _snow_first_print) { \
+		if (_snow_extra_newline) { \
 			fprintf(stdout, "\n"); \
-			_snow_first_print = 0; \
 		} \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
@@ -307,6 +308,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_done() \
 	do { \
+		_snow_extra_newline = 0; \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
 				_SNOW_COLOR_BOLD "%s%s: Passed %i/%i tests." \
@@ -421,7 +423,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define snow_main() \
 	int _snow_exit_code = 0; \
-	int _snow_first_print = 1; \
+	int _snow_extra_newline = 1; \
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
