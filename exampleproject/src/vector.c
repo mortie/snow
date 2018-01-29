@@ -54,7 +54,7 @@ void *vector_get(vector *vec, size_t idx)
 	defer(vector_free(&name))
 
 describe(vector, {
-	it("breaks the rule of math (to demonstrate failed tests)", {
+	it("breaks the rules of math (to demonstrate failed tests)", {
 		assert(1 == 2);
 	});
 
