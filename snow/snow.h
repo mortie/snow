@@ -48,7 +48,6 @@ struct _snow_labels {
 };
 extern struct _snow_labels _snow_labels;
 
-typedef void _snow_de_cb();
 struct _snow_describes { 
 	void (**describes)();
 	size_t size;
