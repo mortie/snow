@@ -10,13 +10,11 @@ be included from the main source file.
 
 Some miscellaneous points:
 
-* If your test suite consists of multiple files, the various `.c` files should
-  be included from the main source file, because Snow uses some static
-  globals. Each `.c` file should probably still include `snow.h` to help your
-  editor out.
-* The defer feature uses some GNU extensions, so Snow might not work with all
+* Snow uses some GNU extensions, so it might not work with all
   ISO C compatible compilers. It's confirmed to work with at least GCC and
-  Clang.
+  Clang. It should even work on GCC and Clang versions too old to support C11
+  (or even C99), but the convenience `asserteq` and `assertneq` macros require
+  C11.
 * Even though Snow is based on passing blocks to the C preprocessor macros,
   unguarded commas are no problem, because the `block` argument is actually
   implemented as `...` and expanded with `__VA_ARGS__`.
@@ -126,20 +124,22 @@ Fail if the expression `x` returns 0.
 Fail unless `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
 
-If you want to explicitly state what type your arguments are
+`asserteq` requires C11.
+If you can't use C11, or want to explicitly state what type your arguments are
 (say you want to compare strings by pointer instead of by content), you
 can use the `asserteq_int`, `asserteq_ptr`, `asserteq_dbl`, and `asserteq_str`
-macros.
+macros instead of `asserteq`.
 
 ### assertneq(a, b)
 
 Fail if `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
 
-If you want to explicitly state what type your arguments are
+`assertneq` requires C11.
+If you can't use C11, or want to explicitly state what type your arguments are
 (say you want to compare strings by pointer instead of by content), you
 can use the `assertneq_int`, `assertneq_ptr`, `assertneq_dbl`, and `asserteq_str`
-macros.
+macros instead of `assertneq`.
 
 ### asserteq\_buf(a, b, n)
 
