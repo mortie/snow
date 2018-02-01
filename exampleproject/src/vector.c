@@ -74,8 +74,8 @@ describe(vector, {
 		asserteq(vec.elem_size, sizeof(int));
 		asserteq(vec.count, 0);
 		assert(vec.size >= 10);
-		// Not an assert, but will cause valgrind to complain
-		// if not enough memory was allocated
+		/* Not an assert, but will cause valgrind to complain
+		 * if not enough memory was allocated */
 		memset(vec.elems, 0xff, 10 * vec.elem_size);
 	});
 

@@ -202,7 +202,8 @@ static int __attribute__((unused)) _snow_asserteq_buf(
 {
 	const char *_a = (const char *)a;
 	const char *_b = (const char *)b;
-	for (size_t i = 0; i < n; ++i)
+	size_t i;
+	for (i = 0; i < n; ++i)
 	{
 		if (_a[i] != _b[i])
 		{
@@ -221,7 +222,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 {
 	const char *_a = (const char *)a;
 	const char *_b = (const char *)b;
-	for (size_t i = 0; i < n; ++i)
+	size_t i;
+	for (i = 0; i < n; ++i)
 	{
 		if (_a[i] != _b[i])
 			return 0;
@@ -242,6 +244,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b), (n)) < 0) \
 			goto _snow_done; \
 	} while (0)
+
+#if(__STDC_VERSION__ >= 201112L)
 
 #define asserteq(a, b) \
 	do { \
@@ -283,6 +287,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
+#else
+
+#define asserteq(a, b) _Pragma("GCC error \"asserteq requires support for C11.\"")
+#define assertneq(a, b) _Pragma("GCC error \"assertneq requires support for C11.\"")
+
+#endif
 
 #define _snow_print_success() \
 	do { \
@@ -391,7 +401,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
 		char *_snow_spaces = malloc(_snow_depth * 2 + 1); \
-		for (int i = 0; i < _snow_depth * 2; ++i) \
+		int i; \
+		for (i = 0; i < _snow_depth * 2; ++i) \
 			_snow_spaces[i] = ' '; \
 		_snow_spaces[_snow_depth * 2] = '\0'; \
 		_snow_print_run(); \
@@ -446,14 +457,16 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_opt_color = 0; \
 		else if (getenv("NO_COLOR") != NULL) \
 			_snow_opt_color = 0; \
-		for (int i = 1; i < argc; ++i) { \
+		int i; \
+		for (i = 1; i < argc; ++i) { \
 			if (strcmp(argv[i], "--color") == 0) \
 				_snow_opt_color = 1; \
 			else if (strcmp(argv[i], "--no-color") == 0) \
 				_snow_opt_color = 0; \
 		} \
-		for (size_t i = 0; i < _snow_describes.count; ++i) { \
-			_snow_describes.describes[i](); \
+		size_t j; \
+		for (j = 0; j < _snow_describes.count; ++j) { \
+			_snow_describes.describes[j](); \
 		} \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
@@ -472,6 +485,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		return _snow_exit_code; \
 	}
 
-#endif // SNOW_DISABLED
+#endif
 
-#endif // SNOW_H
+#endif
