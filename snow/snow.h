@@ -375,7 +375,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	do { \
 		__label__ _snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
-		char *_snow_desc = testdesc; \
+		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
 		__VA_ARGS__ \
 		_snow_successes += 1; \
@@ -416,7 +416,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 #define describe(testname, ...) \
 	static void test_##testname() { \
 		_snow_num_defines += 1; \
-		char *_snow_name = #testname; \
+		const char *_snow_name = #testname; \
 		int __attribute__((unused)) _snow_depth = 0; \
 		int _snow_successes = 0; \
 		int _snow_total = 0; \
