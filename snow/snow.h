@@ -342,12 +342,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 	} while (0)
 
-#define defer(expr) \
+#define defer(...) \
 	do { \
 		__label__ _snow_defer_label; \
 		_snow_defer_label: \
 		if (_snow_rundefer) { \
-			expr; \
+			__VA_ARGS__; \
 			/* Go to the previous defer, or the end of the `it` block */ \
 			if (_snow_labels.count > 0) \
 				goto *_snow_labels.labels[--_snow_labels.count]; \
