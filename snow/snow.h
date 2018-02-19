@@ -435,7 +435,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				_snow_describes.size = 16; \
 			else \
 				_snow_describes.size *= 2; \
-			_snow_describes.describes = realloc( \
+			_snow_describes.describes = (void (**)()) realloc( \
 				_snow_describes.describes, \
 				_snow_describes.size * sizeof(*_snow_describes.describes)); \
 		} \
