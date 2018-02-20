@@ -33,45 +33,47 @@ Since you're not supposed to make your own main function, and instead use the
 Here's a simple example which tests a couple of filesystem functions, and has a
 subdescription for testing fread-related stuff.
 
-	describe(files, {
-		it("opens files", {
-			FILE *f = fopen("test", "r");
-			assertneq(f, NULL);
-			defer(fclose(f));
-		});
-
-		it("writes to files", {
-			FILE *f = fopen("testfile", "w");
-			assertneq(f, NULL);
-			defer(remove("testfile"));
-			defer(fclose(f));
-
-			char str[] = "hello there";
-			asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
-		});
-
-		subdesc(fread, {
-			it("reads 10 bytes", {
-				FILE *f = fopen("/dev/zero", "r");
-				assertneq(f, NULL);
-				defer(fclose(f));
-
-				char buf[10];
-				asserteq(fread(buf, 1, 10, f), 10);
-			});
-
-			it("reads 20 bytes", {
-				FILE *f = fopen("/dev/zero", "r");
-				assertneq(f, NULL);
-				defer(fclose(f));
-
-				char buf[20];
-				asserteq(fread(buf, 1, 20, f), 20);
-			});
-		});
+``` C
+describe(files, {
+	it("opens files", {
+		FILE *f = fopen("test", "r");
+		assertneq(f, NULL);
+		defer(fclose(f));
 	});
 
-	snow_main();
+	it("writes to files", {
+		FILE *f = fopen("testfile", "w");
+		assertneq(f, NULL);
+		defer(remove("testfile"));
+		defer(fclose(f));
+
+		char str[] = "hello there";
+		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
+	});
+
+	subdesc(fread, {
+		it("reads 10 bytes", {
+			FILE *f = fopen("/dev/zero", "r");
+			assertneq(f, NULL);
+			defer(fclose(f));
+
+			char buf[10];
+			asserteq(fread(buf, 1, 10, f), 10);
+		});
+
+		it("reads 20 bytes", {
+			FILE *f = fopen("/dev/zero", "r");
+			assertneq(f, NULL);
+			defer(fclose(f));
+
+			char buf[20];
+			asserteq(fread(buf, 1, 20, f), 20);
+		});
+	});
+});
+
+snow_main();
+```
 
 ## Structure Macros
 
