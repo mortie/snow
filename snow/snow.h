@@ -400,7 +400,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int _snow_total = 0; \
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
-		char *_snow_spaces = malloc(_snow_depth * 2 + 1); \
+		char *_snow_spaces = (char*) malloc(_snow_depth * 2 + 1); \
 		int i; \
 		for (i = 0; i < _snow_depth * 2; ++i) \
 			_snow_spaces[i] = ' '; \
