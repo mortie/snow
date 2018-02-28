@@ -278,10 +278,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			float: _snow_assertneq_dbl, \
 			double: _snow_assertneq_dbl, \
 			default: _Generic((b) - (b), \
-				int: _snow_asserteq_int, \
+				int: _snow_assertneq_int, \
 				default: _Generic((b) - (b), \
-					ptrdiff_t: _snow_asserteq_ptr, \
-					default: _snow_asserteq_int)) \
+					ptrdiff_t: _snow_assertneq_ptr, \
+					default: _snow_assertneq_int)) \
 		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
 		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
@@ -400,7 +400,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int _snow_total = 0; \
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
-		char *_snow_spaces = (char*) malloc(_snow_depth * 2 + 1); \
+		char *_snow_spaces = (char*)malloc(_snow_depth * 2 + 1); \
 		int i; \
 		for (i = 0; i < _snow_depth * 2; ++i) \
 			_snow_spaces[i] = ' '; \
@@ -435,7 +435,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				_snow_describes.size = 16; \
 			else \
 				_snow_describes.size *= 2; \
-			_snow_describes.describes = (void (**)()) realloc( \
+			_snow_describes.describes = (void (**)())realloc( \
 				_snow_describes.describes, \
 				_snow_describes.size * sizeof(*_snow_describes.describes)); \
 		} \
