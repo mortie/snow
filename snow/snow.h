@@ -18,6 +18,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define SNOW_VERSION "0.1.0"
+
 #ifndef SNOW_COLOR_SUCCESS
 #define SNOW_COLOR_SUCCESS "\033[32m"
 #endif
@@ -58,7 +60,7 @@ extern struct _snow_describes _snow_describes;
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
 		_snow_extra_newline = 1; \
-		_snow_exit_code = 1; \
+		_snow_exit_code = EXIT_FAILURE; \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
 				_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "%s✕ " \
@@ -444,12 +446,13 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	}
 
 #define snow_main() \
-	int _snow_exit_code = 0; \
+	int _snow_exit_code = EXIT_SUCCESS; \
 	int _snow_extra_newline = 1; \
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
 	int _snow_opt_color = 1; \
+	int _snow_opt_version = 0; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
 	int main(int argc, char **argv) { \
@@ -463,6 +466,14 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				_snow_opt_color = 1; \
 			else if (strcmp(argv[i], "--no-color") == 0) \
 				_snow_opt_color = 0; \
+			else if ( \
+					strcmp(argv[i], "--version") == 0 || \
+					strcmp(argv[i], "-v") == 0) \
+				_snow_opt_version = 1; \
+		} \
+		if (_snow_opt_version) { \
+			printf("Snow %s\n", SNOW_VERSION); \
+			return EXIT_SUCCESS; \
 		} \
 		size_t j; \
 		for (j = 0; j < _snow_describes.count; ++j) { \

@@ -27,6 +27,7 @@ Since you're not supposed to make your own main function, and instead use the
 * **--color**: Force the use of color, even when stdout is not a TTY or
   NO\_COLOR is set.
 * **--no-color**: Force colors to be disabled, evern when stdout is a TTY.
+* **--version**: Show the version of Snow.
 
 ## Example
 
