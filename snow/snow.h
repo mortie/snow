@@ -1,7 +1,7 @@
 #ifndef SNOW_H
 #define SNOW_H
 
-#ifdef SNOW_DISABLED
+#ifndef SNOW_ENABLED
 
 #define describe(...)
 

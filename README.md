@@ -18,23 +18,37 @@ Some miscellaneous points:
 * Even though Snow is based on passing blocks to the C preprocessor macros,
   unguarded commas are no problem, because the `block` argument is actually
   implemented as `...` and expanded with `__VA_ARGS__`.
+* I really recommend running the test executable with
+  [valgrind](http://valgrind.org/). That will help you find memory issues such
+  as memory leaks, out of bounds array reads/writes, etc.
 
 ## Arguments
 
-Since you're not supposed to make your own main function, and instead use the
-`snow_main` macro, your binary will take these arguments:
+When creating the main function using the `snow_main` macro, your executable
+will take these arguments:
 
 * **--color**: Force the use of color, even when stdout is not a TTY or
-  NO\_COLOR is set.
+  `NO_COLOR` is set.
 * **--no-color**: Force colors to be disabled, evern when stdout is a TTY.
-* **--version**: Show the version of Snow.
+* **--version**, **-v**: Show the version of Snow.
 
 ## Example
 
 Here's a simple example which tests a couple of filesystem functions, and has a
 subdescription for testing fread-related stuff.
 
+* Compile: `gcc -Isnow -DSNOW_ENABLED -g -o test example.c`
+	* `-Isnow`: add `snow` to our include path, to make `#include <snow/snow.h>`
+	  work. (That assumes `snow/snow/snow.h` exists, like if you clone this repo.)
+	* `-DSNOW_ENABLED`: Enable snow (otherwise `describe(...)` would be
+	  compiled down to nothing).
+	* `-g`: Add debug symbols for valgrind.
+* Run: `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./test`
+
 ``` C
+#include <stdio.h>
+#include <snow/snow.h>
+
 describe(files, {
 	it("opens files", {
 		FILE *f = fopen("test", "r");
@@ -167,11 +181,10 @@ test code with a flag to link against your library.
 ### Testing a program or library internals
 
 Testing anything that's not exposed as a library's public API is is possible
-because of the `SNOW_DISABLED` macro; if `SNOW_DISABLED` is defined, most of
-Snow's macros won't be defined, and `describe` will just be an empty macro
-which will disappear after the preprocessor. Therfore, you can include tests
-directly in your C source files, and compile non-test builds with the
-`-DSNOW_DISABLED` compiler argument.
+because unless `SNOW_ENABLED` is defined, `describe` will just be an empty
+macro, and all uses of it will be removed by the preprocessor. Therfore, you
+can include tests directly in your C source files, and regular builds won't
+use snow, while builds with `-DSNOW_ENABLED` will be your test suite.
 
 Since all test macros are compiled down to nothing, this will have no runtime
 performance or binary size impact.

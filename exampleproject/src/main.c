@@ -1,7 +1,12 @@
 #include "vector.h"
 #include <stdio.h>
 
-#ifdef SNOW_DISABLED
+#ifdef SNOW_ENABLED
+
+#include <snow/snow.h>
+snow_main();
+
+#else
 
 // Example program which will just put all strings in argv into a vector,
 // then loop through and print the arguments
@@ -20,10 +25,5 @@ int main(int argc, char **argv) {
 
 	return 0;
 }
-
-#else
-
-#include <snow/snow.h>
-snow_main();
 
 #endif
