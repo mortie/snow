@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SNOW_VERSION "0.1.0"
+#define SNOW_VERSION "1.0.0"
 
 #ifndef SNOW_COLOR_SUCCESS
 #define SNOW_COLOR_SUCCESS "\033[32m"
