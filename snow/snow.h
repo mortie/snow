@@ -488,17 +488,19 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
-		if (_snow_num_defines > 1) { \
+		if (_snow_num_defines > 1 || _snow_opt_quiet) { \
 			if (_snow_opt_color) { \
 				fprintf(stdout, \
-					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n\n" \
+					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n" \
 					_SNOW_COLOR_RESET, \
 					_snow_global_successes, _snow_global_total); \
 			} else { \
 				fprintf(stdout, \
-					"Total: Passed %i/%i tests.\n\n", \
+					"Total: Passed %i/%i tests.\n", \
 					_snow_global_successes, _snow_global_total); \
 			} \
+			if (!_snow_opt_quiet) \
+				fprintf(stdout, "\n"); \
 		} \
 		return _snow_exit_code; \
 	}
