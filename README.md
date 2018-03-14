@@ -30,6 +30,8 @@ will take these arguments:
 * **--color**: Force the use of color, even when stdout is not a TTY or
   `NO_COLOR` is set.
 * **--no-color**: Force colors to be disabled, evern when stdout is a TTY.
+* **--quiet**: Suppress most messages. Test failures will still print and the
+  'Total: Passed X/Y tests' line will still print.
 * **--version**, **-v**: Show the version of Snow.
 
 ## Example
