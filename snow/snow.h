@@ -42,6 +42,7 @@ extern int _snow_global_successes;
 extern int _snow_num_defines;
 
 extern int _snow_opt_color;
+extern int _snow_opt_quiet;
 
 struct _snow_labels { 
 	void **labels;
@@ -298,6 +299,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_success() \
 	do { \
+		if (_snow_opt_quiet) break; \
 		_snow_extra_newline = 1; \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
@@ -315,6 +317,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_run() \
 	do { \
+		if (_snow_opt_quiet) break; \
 		if (_snow_extra_newline) { \
 			fprintf(stdout, "\n"); \
 		} \
@@ -331,6 +334,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_done() \
 	do { \
+		if (_snow_opt_quiet) break; \
 		_snow_extra_newline = 0; \
 		if (_snow_opt_color) { \
 			fprintf(stdout, \
@@ -452,6 +456,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
 	int _snow_opt_color = 1; \
+	int _snow_opt_quiet = 0; \
 	int _snow_opt_version = 0; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
@@ -470,6 +475,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 					strcmp(argv[i], "--version") == 0 || \
 					strcmp(argv[i], "-v") == 0) \
 				_snow_opt_version = 1; \
+			else if (strcmp(argv[i], "--quiet") == 0) \
+				_snow_opt_quiet = 1; \
 		} \
 		if (_snow_opt_version) { \
 			printf("Snow %s\n", SNOW_VERSION); \
