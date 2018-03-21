@@ -41,6 +41,10 @@
 #define _SNOW_COLOR_BOLD    "\033[1m"
 #define _SNOW_COLOR_RESET   "\033[0m"
 
+// For stdio.h to define fileno, _POSIX_C_SOURCE or similar has to be defined
+// before stdio.h is included.
+int fileno(FILE *stream);
+
 extern FILE *_snow_log_file;
 
 extern int _snow_exit_code;
@@ -548,13 +552,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	}; \
 	int main(int argc, char **argv) { \
 		_snow_log_file = stdout; \
-		if (!isatty(1)) \
-		{ \
-			_snow_opts[_snow_opt_color].value = 0; \
-			_snow_opts[_snow_opt_maybes].value = 0; \
-		} \
-		else if (getenv("NO_COLOR") != NULL) \
-			_snow_opts[_snow_opt_color].value = 0; \
 		int i; \
 		for (i = 1; i < argc; ++i) { \
 			int j, len; \
@@ -588,17 +585,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			} \
 			if (strcmp(argv[i], "--log") == 0) { \
 				if (++i >= argc) break; \
-				if (strcmp(argv[i], "-") == 1) \
+				if (strcmp(argv[i], "-") == 0) \
 					_snow_log_file = stdout; \
-				else { \
-					if (!_snow_opts[_snow_opt_color].overridden) \
-						_snow_opts[_snow_opt_color].value = 0; \
-					if (!_snow_opts[_snow_opt_maybes].overridden) \
-						_snow_opts[_snow_opt_maybes].value = 0; \
-					if (!_snow_opts[_snow_opt_cr].overridden) \
-						_snow_opts[_snow_opt_cr].value = 1; \
+				else \
 					_snow_log_file = fopen(argv[i], "w"); \
-				} \
 				if (_snow_log_file == NULL) { \
 					_snow_log_file = stdout; \
 					_snow_print( \
@@ -608,6 +598,21 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				} \
 			} \
 		} \
+		/* Default to no colors if NO_COLOR */ \
+		if (getenv("NO_COLOR") != NULL) { \
+			if (!_snow_opts[_snow_opt_color].overridden) \
+				_snow_opts[_snow_opt_color].value = 0; \
+		} \
+		/* If not a tty, default to "boring" output */ \
+		if (!isatty(fileno(_snow_log_file))) { \
+			if (!_snow_opts[_snow_opt_color].overridden) \
+				_snow_opts[_snow_opt_color].value = 0; \
+			if (!_snow_opts[_snow_opt_maybes].overridden) \
+				_snow_opts[_snow_opt_maybes].value = 0; \
+			if (!_snow_opts[_snow_opt_cr].overridden) \
+				_snow_opts[_snow_opt_cr].value = 0; \
+		} \
+		/* --version: Print version and exit */ \
 		if (_snow_opts[_snow_opt_version].value) { \
 			printf("Snow %s\n", SNOW_VERSION); \
 			return EXIT_SUCCESS; \
