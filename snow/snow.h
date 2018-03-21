@@ -540,7 +540,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		[_snow_opt_color]   = { "color",   'c',  1, 0 }, \
 		[_snow_opt_quiet]   = { "quiet",   'q',  0, 0 }, \
 		[_snow_opt_version] = { "version", 'v',  0, 0 }, \
-		[_snow_opt_maybes]  = { "maybes",  'm',  0, 0 }, \
+		[_snow_opt_maybes]  = { "maybes",  'm',  1, 0 }, \
 		[_snow_opt_cr]      = { "cr",      '\0', 1, 0 }, \
 		[_snow_opt_timer]   = { "timer",   't',  1, 0 }, \
 	}; \
@@ -548,8 +548,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_log_file = stdout; \
 		if (!isatty(1)) \
 		{ \
-			_snow_opts[_snow_opt_color].value = 0; \
+			_snow_opts[_snow_opt_color].value  = 0; \
 			_snow_opts[_snow_opt_maybes].value = 0; \
+			_snow_opts[_snow_opt_cr].value     = 0; \
 		} \
 		else if (getenv("NO_COLOR") != NULL) \
 			_snow_opts[_snow_opt_color].value = 0; \
@@ -592,6 +593,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 					if (!_snow_opts[_snow_opt_color].overridden) \
 						_snow_opts[_snow_opt_color].value = 0; \
 					if (!_snow_opts[_snow_opt_maybes].overridden) \
+						_snow_opts[_snow_opt_maybes].value = 0; \
+					if (!_snow_opts[_snow_opt_cr].overridden) \
 						_snow_opts[_snow_opt_maybes].value = 0; \
 					_snow_log_file = fopen(argv[i], "w"); \
 				} \
