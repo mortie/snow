@@ -103,8 +103,19 @@ extern clock_t _snow_timer;
 	} \
 	while (0)
 
+#define _snow_print_result_newline() \
+	do { \
+		if (_snow_opts[_snow_opt_maybes].value) {\
+			if (_snow_opts[_snow_opt_cr].value) \
+				_snow_print("\r"); \
+			else \
+				_snow_print("\n"); \
+		} \
+	} while (0)
+
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
+		_snow_print_result_newline(); \
 		_snow_extra_newline = 1; \
 		_snow_exit_code = EXIT_FAILURE; \
 		if (_snow_opts[_snow_opt_color].value) { \
@@ -341,16 +352,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #endif
 
-#define _snow_print_result_newline() \
-	do { \
-		if (_snow_opts[_snow_opt_maybes].value) {\
-			if (_snow_opts[_snow_opt_cr].value) \
-				_snow_print("\r"); \
-			else \
-				_snow_print("\n"); \
-		} \
-	} while (0)
-
 #define _snow_print_success() \
 	do { \
 		_snow_print_result_newline(); \
@@ -380,12 +381,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_print( \
 				_SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "%s? " \
 				_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: " \
-				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " \
 				_SNOW_COLOR_RESET, \
 				_snow_spaces, _snow_desc); \
 		} else { \
 			_snow_print( \
-				"%s? Testing: %s\r", \
+				"%s? Testing: %s: ", \
 				_snow_spaces, _snow_desc); \
 		} \
 	} while (0)
@@ -541,7 +542,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		[_snow_opt_color]   = { "color",   'c',  1, 0 }, \
 		[_snow_opt_quiet]   = { "quiet",   'q',  0, 0 }, \
 		[_snow_opt_version] = { "version", 'v',  0, 0 }, \
-		[_snow_opt_maybes]  = { "maybes",  'm',  0, 0 }, \
+		[_snow_opt_maybes]  = { "maybes",  'm',  1, 0 }, \
 		[_snow_opt_cr]      = { "cr",      '\0', 1, 0 }, \
 		[_snow_opt_timer]   = { "timer",   't',  1, 0 }, \
 	}; \
@@ -594,6 +595,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 						_snow_opts[_snow_opt_color].value = 0; \
 					if (!_snow_opts[_snow_opt_maybes].overridden) \
 						_snow_opts[_snow_opt_maybes].value = 0; \
+					if (!_snow_opts[_snow_opt_cr].overridden) \
+						_snow_opts[_snow_opt_cr].value = 1; \
 					_snow_log_file = fopen(argv[i], "w"); \
 				} \
 				if (_snow_log_file == NULL) { \
