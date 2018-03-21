@@ -12,7 +12,7 @@ INCLUDE = -I..
 
 $(TARGET): $(OBJ) $(HDR)
 	$(CC) $(CFLAGS) -o $@ $(OBJ)
-$(TARGET)-test: $(OBJ-TEST)
+test: $(OBJ-TEST)
 	$(CC) -g $(CFLAGS) -o $@ $(OBJ-TEST)
 
 obj/%.o: src/%.c $(HDR)
@@ -22,11 +22,11 @@ obj-test/%.o: src/%.c $(HDR)
 	@mkdir -p $(dir $@)
 	$(CC) -DSNOW_ENABLED -g $(INCLUDE) $(CFLAGS) -c -o $@ $<
 
-test: $(TARGET)-test
-	valgrind $(VGFLAGS) ./$(TARGET)-test
+run-test: $(TARGET)-test
+	valgrind $(VGFLAGS) ./test
 
 clean:
 	rm -rf obj obj-test
-	rm -f $(TARGET) $(TARGET)-test
+	rm -f $(TARGET) test
 
-.PHONY: test clean
+.PHONY: run-test clean
