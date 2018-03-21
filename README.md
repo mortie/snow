@@ -35,6 +35,7 @@ relevant function:
 * **--quiet**, **-q**, or **--no-quiet**: Suppress most messages, only test faulures
   and the 'Total: Passed X/Y tests' line will still print.
   Default: off.
+* **--log <file>**: Output to a log file instead of stdout.
 * **--timer**, **-t**, or **--no-timer**: Print the number of miliseconds CPU time
   spent on each test alongside its success message.
   Default: on.
