@@ -22,7 +22,7 @@ obj-test/%.o: src/%.c $(HDR)
 	@mkdir -p $(dir $@)
 	$(CC) -DSNOW_ENABLED -g $(INCLUDE) $(CFLAGS) -c -o $@ $<
 
-run-test: $(TARGET)-test
+run-test: test
 	valgrind $(VGFLAGS) ./test
 
 clean:
