@@ -80,9 +80,9 @@ typedef enum
 struct _snow_option
 {
 	char *fullname;
-	char  shortname;
-	int   value;
-	int   overridden;
+	char shortname;
+	int value;
+	int overridden;
 };
 extern struct _snow_option _snow_opts[];
 
@@ -100,7 +100,7 @@ extern clock_t _snow_timer;
 		{ \
 			double ms = clock() - _snow_timer; \
 			ms *= 1000.0 / CLOCKS_PER_SEC; \
-			_snow_print(" %.2f ms\n", ms); \
+			_snow_print(": %.2f ms\n", ms); \
 		} \
 		else \
 			_snow_print("\n"); \
@@ -132,7 +132,7 @@ extern clock_t _snow_timer;
 		} else { \
 			_snow_print("%s✕ Failed:  %s:", spaces, desc); \
 		} \
-		_snow_print_timer(); \
+		_snow_print("\n"); \
 		_snow_print("%s    ", spaces); \
 		_snow_print(__VA_ARGS__); \
 		_snow_print("\n%s    in %s:%s\n", spaces, file, name); \
@@ -617,10 +617,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			printf("Snow %s\n", SNOW_VERSION); \
 			return EXIT_SUCCESS; \
 		} \
+		/* Run tests */ \
 		size_t j; \
 		for (j = 0; j < _snow_describes.count; ++j) { \
 			_snow_describes.describes[j](); \
 		} \
+		/* Cleanup, print result */ \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
 		if (_snow_num_defines > 1 || _snow_opts[_snow_opt_quiet].value) { \
