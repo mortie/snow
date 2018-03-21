@@ -25,14 +25,19 @@ Some miscellaneous points:
 ## Arguments
 
 When creating the main function using the `snow_main` macro, your executable
-will take these arguments:
+will take these arguments. The **--no-** prefixed arguments will disable the
+relevant function:
 
-* **--color**: Force the use of color, even when stdout is not a TTY or
-  `NO_COLOR` is set.
-* **--no-color**: Force colors to be disabled, evern when stdout is a TTY.
-* **--quiet**: Suppress most messages. Test failures will still print and the
-  'Total: Passed X/Y tests' line will still print.
-* **--version**, **-v**: Show the version of Snow.
+* **--color**, **-c**, or **--no-color**: Enable the use of color. Color is
+  automatically disabled for non-TTYs,or where `NO_COLOR` is set. This will 
+  override those.
+* **--quiet**, **-q**, or **--no-quiet**: Suppress most messages, only test faulures
+  and the 'Total: Passed X/Y tests' line will still print.
+* **--version**, **-v**, or **--no-version**: Show the current version and exit.
+* **--maybes**, **-m**, or **--no-maybes**: Print out messages when beginning a test
+  rather than just when it is ended.
+* **--cr**, or **--no-cr**: Print a `\r` after maybe messages instead of `\n`. This
+  will override them with successes or failures as they are printed out.
 
 ## Example
 
