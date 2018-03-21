@@ -38,6 +38,8 @@ relevant function:
   rather than just when it is ended.
 * **--cr**, or **--no-cr**: Print a `\r` after maybe messages instead of `\n`. This
   will override them with successes or failures as they are printed out.
+* **--timer**, **-t**, or **--no-timer**: Print the number of miliseconds CPU time
+  spent on each test alongside its success message.
 
 ## Example
 
