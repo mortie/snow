@@ -24,6 +24,10 @@
 #define SNOW_COLOR_SUCCESS "\033[32m"
 #endif
 
+#ifndef SNOW_COLOR_MAYBE
+#define SNOW_COLOR_MAYBE "\033[35m"
+#endif
+
 #ifndef SNOW_COLOR_FAIL
 #define SNOW_COLOR_FAIL "\033[31m"
 #endif
@@ -45,6 +49,7 @@ extern int _snow_num_defines;
 
 extern int _snow_opt_color;
 extern int _snow_opt_quiet;
+extern int _snow_opt_maybes;
 
 struct _snow_labels { 
 	void **labels;
@@ -322,20 +327,21 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 	} while (0)
 
-#define _snow_print_success() \
+#define _snow_print_maybe() \
 	do { \
 		if (_snow_opt_quiet) break; \
+		if (!_snow_opt_maybes) break; \
 		_snow_extra_newline = 1; \
 		if (_snow_opt_color) { \
 			_snow_print( \
-				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "%s✓ " \
-				_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
+				_SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "%s? " \
+				_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: " \
 				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-				_SNOW_COLOR_RESET "\n", \
+				_SNOW_COLOR_RESET "\r", \
 				_snow_spaces, _snow_desc); \
 		} else { \
 			_snow_print( \
-				"%s✓ Success: %s\n", \
+				"%s? Testing: %s\r", \
 				_snow_spaces, _snow_desc); \
 		} \
 	} while (0)
@@ -408,6 +414,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
+		_snow_print_maybe(); \
 		__VA_ARGS__ \
 		_snow_successes += 1; \
 		_snow_print_success(); \
@@ -483,14 +490,19 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_opt_color = 1; \
 	int _snow_opt_quiet = 0; \
 	int _snow_opt_version = 0; \
+	int _snow_opt_maybes = 1; \
 	FILE *_snow_log_file; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
 	int main(int argc, char **argv) { \
 		int color_overridden = 0; \
-		_snow_log_file = stderr; \
+		int maybes_overridden = 0; \
+		_snow_log_file = stdout; \
 		if (!isatty(1)) \
+		{ \
 			_snow_opt_color = 0; \
+			_snow_opt_maybes = 0; \
+		} \
 		else if (getenv("NO_COLOR") != NULL) \
 			_snow_opt_color = 0; \
 		int i; \
@@ -505,6 +517,16 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				color_overridden = 1; \
 				_snow_opt_color = 0; \
 			} \
+			else if (strcmp(argv[i], "--maybes") == 0) \
+			{ \
+				maybes_overridden = 1; \
+				_snow_opt_maybes = 1; \
+			} \
+			else if (strcmp(argv[i], "--no-maybes") == 0) \
+			{ \
+				maybes_overridden = 1; \
+				_snow_opt_maybes = 0; \
+			} \
 			else if ( \
 					strcmp(argv[i], "--version") == 0 || \
 					strcmp(argv[i], "-v") == 0) \
@@ -518,8 +540,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 					_snow_log_file = stdout; \
 				else \
 				{ \
-					if (!color_overridden) \
-						_snow_opt_color = 0; \
+					if (!color_overridden)  _snow_opt_color = 0; \
+					if (!maybes_overridden) _snow_opt_maybes = 0; \
 					_snow_log_file = fopen(argv[i], "w"); \
 				} \
 				if (_snow_log_file == NULL) \
