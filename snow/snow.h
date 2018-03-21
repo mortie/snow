@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <time.h>
+#include <sys/time.h>
 
 #define SNOW_VERSION "1.1.0"
 
@@ -86,7 +86,7 @@ struct _snow_option
 };
 extern struct _snow_option _snow_opts[];
 
-extern clock_t _snow_timer;
+extern struct timeval _snow_timer;
 
 #define _snow_print(...) \
 	do { \
@@ -98,9 +98,15 @@ extern clock_t _snow_timer;
 	do { \
 		if (_snow_opts[_snow_opt_timer].value) \
 		{ \
-			double ms = clock() - _snow_timer; \
-			ms *= 1000.0 / CLOCKS_PER_SEC; \
-			_snow_print(": %.2f ms\n", ms); \
+			struct timeval now; \
+			gettimeofday(&now, NULL); \
+			double before_ms = _snow_timer.tv_sec * 1000.0 + _snow_timer.tv_usec / 1000.0; \
+			double now_ms = now.tv_sec * 1000.0 + now.tv_usec / 1000.0; \
+			double ms = now_ms - before_ms; \
+			if (ms < 1000) \
+				_snow_print(": %.2fms\n", ms); \
+			else \
+				_snow_print(": %.2fs\n", ms / 1000); \
 		} \
 		else \
 			_snow_print("\n"); \
@@ -464,7 +470,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
 		_snow_print_maybe(); \
-		_snow_timer = clock(); \
+		gettimeofday(&_snow_timer, NULL); \
 		__VA_ARGS__ \
 		_snow_successes += 1; \
 		_snow_print_success(); \
@@ -539,7 +545,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
 	FILE *_snow_log_file; \
-	clock_t _snow_timer; \
+	struct timeval _snow_timer; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
 	struct _snow_option _snow_opts[] = { \
