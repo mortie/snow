@@ -244,7 +244,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	} while (0)
 #define assertneq_buf(a, b, n) \
 	do { \
-		if (_snow_asserteq_buf(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b), (n)) < 0) \
+		if (_snow_assertneq_buf(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, (a), (b), (n)) < 0) \
 			goto _snow_done; \
 	} while (0)
 
@@ -377,7 +377,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 	} while (0)
 
-#define it(testdesc, ...) \
+#define test(testdesc, ...) \
 	do { \
 		__label__ _snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
@@ -394,6 +394,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			goto *_snow_labels.labels[_snow_labels.count]; \
 		} \
 	} while (0)
+#define it test
 
 #define subdesc(testname, ...) \
 	do { \
