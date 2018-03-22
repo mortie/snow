@@ -28,18 +28,23 @@ When creating the main function using the `snow_main` macro, your executable
 will take these arguments. The **--no-** prefixed arguments will disable the
 relevant function:
 
-* **--color**, **-c**, or **--no-color**: Enable the use of color. Color is
-  automatically disabled for non-TTYs,or where `NO_COLOR` is set. This will 
-  override those.
+* **--version**, **-v**: Show the current version and exit.
+* **--help**, **-h**: Show usage information and exit.
+* **--color**, **-c**, or **--no-color**: Enable the use of color.
+  Default: on when output is a TTY, off otherwise.
 * **--quiet**, **-q**, or **--no-quiet**: Suppress most messages, only test faulures
   and the 'Total: Passed X/Y tests' line will still print.
-* **--version**, **-v**, or **--no-version**: Show the current version and exit.
-* **--maybes**, **-m**, or **--no-maybes**: Print out messages when beginning a test
-  rather than just when it is ended.
-* **--cr**, or **--no-cr**: Print a `\r` after maybe messages instead of `\n`. This
-  will override them with successes or failures as they are printed out.
+  Default: off.
+* **--log \<file\>**: Output to a log file instead of stdout.
 * **--timer**, **-t**, or **--no-timer**: Print the number of miliseconds CPU time
   spent on each test alongside its success message.
+  Default: on.
+* **--maybes**, **-m**, or **--no-maybes**: Print out messages when beginning a test
+  rather than just when it completed.
+  Default: on when output is a TTY, off otherwise.
+* **--cr**, or **--no-cr**: Print a `\r` after maybe messages instead of `\n`. This
+  will override them with successes or failures as they are printed out.
+  Default: on when output is a TTY, off otherwise.
 
 ## Example
 

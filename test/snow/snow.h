@@ -17,17 +17,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/time.h>
 
 #define SNOW_VERSION "1.1.0"
 
 #ifndef SNOW_COLOR_SUCCESS
 #define SNOW_COLOR_SUCCESS "\033[32m"
-#endif
-
-#ifndef SNOW_COLOR_MAYBE
-#define SNOW_COLOR_MAYBE "\033[35m"
 #endif
 
 #ifndef SNOW_COLOR_FAIL
@@ -41,17 +35,14 @@
 #define _SNOW_COLOR_BOLD    "\033[1m"
 #define _SNOW_COLOR_RESET   "\033[0m"
 
-// For stdio.h to define fileno, _POSIX_C_SOURCE or similar has to be defined
-// before stdio.h is included.
-int fileno(FILE *stream);
-
-extern FILE *_snow_log_file;
-
 extern int _snow_exit_code;
 extern int _snow_extra_newline;
 extern int _snow_global_total;
 extern int _snow_global_successes;
 extern int _snow_num_defines;
+
+extern int _snow_opt_color;
+extern int _snow_opt_quiet;
 
 struct _snow_labels { 
 	void **labels;
@@ -67,81 +58,25 @@ struct _snow_describes {
 };
 extern struct _snow_describes _snow_describes;
 
-typedef enum
-{
-	_snow_opt_color,
-	_snow_opt_quiet,
-	_snow_opt_version,
-	_snow_opt_maybes,
-	_snow_opt_cr,
-	_snow_opt_timer,
-} _snow_opt_names;
-
-struct _snow_option
-{
-	char *fullname;
-	char shortname;
-	int value;
-	int overridden;
-};
-extern struct _snow_option _snow_opts[];
-
-extern struct timeval _snow_timer;
-
-#define _snow_print(...) \
-	do { \
-		fprintf(_snow_log_file, __VA_ARGS__); \
-		fflush(_snow_log_file); \
-	} while (0)
-
-#define _snow_print_timer() \
-	do { \
-		if (_snow_opts[_snow_opt_timer].value) \
-		{ \
-			struct timeval now; \
-			gettimeofday(&now, NULL); \
-			double before_ms = _snow_timer.tv_sec * 1000.0 + _snow_timer.tv_usec / 1000.0; \
-			double now_ms = now.tv_sec * 1000.0 + now.tv_usec / 1000.0; \
-			double ms = now_ms - before_ms; \
-			if (ms < 1000) \
-				_snow_print(": %.2fms\n", ms); \
-			else \
-				_snow_print(": %.2fs\n", ms / 1000); \
-		} \
-		else \
-			_snow_print("\n"); \
-	} \
-	while (0)
-
-#define _snow_print_result_newline() \
-	do { \
-		if (_snow_opts[_snow_opt_maybes].value) {\
-			if (_snow_opts[_snow_opt_cr].value) \
-				_snow_print("\r"); \
-			else \
-				_snow_print("\n"); \
-		} \
-	} while (0)
-
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
-		_snow_print_result_newline(); \
 		_snow_extra_newline = 1; \
 		_snow_exit_code = EXIT_FAILURE; \
-		if (_snow_opts[_snow_opt_color].value) { \
-			_snow_print( \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
 				_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "%s✕ " \
 				_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  " \
 				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-				_SNOW_COLOR_RESET ":", \
-				spaces, desc); \
+				_SNOW_COLOR_RESET ":\n%s    ", \
+				spaces, desc, spaces); \
 		} else { \
-			_snow_print("%s✕ Failed:  %s:", spaces, desc); \
+			fprintf(stdout, \
+				"%s✕ Failed:  %s:\n%s    ", \
+				spaces, desc, spaces); \
 		} \
-		_snow_print("\n"); \
-		_snow_print("%s    ", spaces); \
-		_snow_print(__VA_ARGS__); \
-		_snow_print("\n%s    in %s:%s\n", spaces, file, name); \
+		fprintf(stdout, __VA_ARGS__); \
+		fprintf(stdout, \
+			"\n%s    in %s:%s\n", spaces, file, name); \
 	} while (0)
 
 #define fail(...) \
@@ -364,55 +299,34 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_success() \
 	do { \
-		_snow_print_result_newline(); \
-		if (_snow_opts[_snow_opt_quiet].value) break; \
+		if (_snow_opt_quiet) break; \
 		_snow_extra_newline = 1; \
-		if (_snow_opts[_snow_opt_color].value) { \
-			_snow_print( \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
 				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "%s✓ " \
 				_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
 				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-				_SNOW_COLOR_RESET, \
+				_SNOW_COLOR_RESET "\n", \
 				_snow_spaces, _snow_desc); \
 		} else { \
-			_snow_print( \
-				"%s✓ Success: %s", \
-				_snow_spaces, _snow_desc); \
-		} \
-		_snow_print_timer(); \
-	} while (0)
-
-#define _snow_print_maybe() \
-	do { \
-		if (_snow_opts[_snow_opt_quiet].value) break; \
-		if (!_snow_opts[_snow_opt_maybes].value) break; \
-		_snow_extra_newline = 1; \
-		if (_snow_opts[_snow_opt_color].value) { \
-			_snow_print( \
-				_SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "%s? " \
-				_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: " \
-				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " \
-				_SNOW_COLOR_RESET, \
-				_snow_spaces, _snow_desc); \
-		} else { \
-			_snow_print( \
-				"%s? Testing: %s: ", \
+			fprintf(stdout, \
+				"%s✓ Success: %s\n", \
 				_snow_spaces, _snow_desc); \
 		} \
 	} while (0)
 
 #define _snow_print_run() \
 	do { \
-		if (_snow_opts[_snow_opt_quiet].value) break; \
+		if (_snow_opt_quiet) break; \
 		if (_snow_extra_newline) { \
-			_snow_print("\n"); \
+			fprintf(stdout, "\n"); \
 		} \
-		if (_snow_opts[_snow_opt_color].value) { \
-			_snow_print( \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
 				_SNOW_COLOR_BOLD "%sTesting %s:" _SNOW_COLOR_RESET "\n", \
 				_snow_spaces, _snow_name); \
 		} else { \
-			_snow_print( \
+			fprintf(stdout, \
 				"%sTesting %s:\n", \
 				_snow_spaces, _snow_name); \
 		} \
@@ -420,15 +334,15 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_done() \
 	do { \
-		if (_snow_opts[_snow_opt_quiet].value) break; \
+		if (_snow_opt_quiet) break; \
 		_snow_extra_newline = 0; \
-		if (_snow_opts[_snow_opt_color].value) { \
-			_snow_print( \
+		if (_snow_opt_color) { \
+			fprintf(stdout, \
 				_SNOW_COLOR_BOLD "%s%s: Passed %i/%i tests." \
 				_SNOW_COLOR_RESET "\n\n", \
 				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
 		} else { \
-			_snow_print( \
+			fprintf(stdout, \
 				"%s%s: Passed %i/%i tests.\n\n", \
 				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
 		} \
@@ -469,8 +383,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
-		_snow_print_maybe(); \
-		gettimeofday(&_snow_timer, NULL); \
 		__VA_ARGS__ \
 		_snow_successes += 1; \
 		_snow_print_success(); \
@@ -544,105 +456,52 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
-	FILE *_snow_log_file; \
-	struct timeval _snow_timer; \
+	int _snow_opt_color = 1; \
+	int _snow_opt_quiet = 0; \
+	int _snow_opt_version = 0; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
-	struct _snow_option _snow_opts[] = { \
-		[_snow_opt_color]   = { "color",   'c',  1, 0 }, \
-		[_snow_opt_quiet]   = { "quiet",   'q',  0, 0 }, \
-		[_snow_opt_version] = { "version", 'v',  0, 0 }, \
-		[_snow_opt_maybes]  = { "maybes",  'm',  1, 0 }, \
-		[_snow_opt_cr]      = { "cr",      '\0', 1, 0 }, \
-		[_snow_opt_timer]   = { "timer",   't',  1, 0 }, \
-	}; \
 	int main(int argc, char **argv) { \
-		_snow_log_file = stdout; \
+		if (!isatty(1)) \
+			_snow_opt_color = 0; \
+		else if (getenv("NO_COLOR") != NULL) \
+			_snow_opt_color = 0; \
 		int i; \
 		for (i = 1; i < argc; ++i) { \
-			int j, len; \
-			len = sizeof(_snow_opts)/sizeof(*_snow_opts); \
-			if (strncmp(argv[i], "--no-", 5) == 0) { \
-				for (j = 0; j < len; ++j) { \
-					struct _snow_option *opt = &_snow_opts[j]; \
-					if (strcmp(&argv[i][5], opt->fullname) == 0) { \
-						opt->value = 0; \
-						opt->overridden = 1; \
-					} \
-				} \
-			} \
-			else if (strncmp(argv[i], "--", 2) == 0) { \
-				for (j = 0; j < len; ++j) { \
-					struct _snow_option *opt = &_snow_opts[j]; \
-					if (strcmp(&argv[i][2], opt->fullname) == 0) { \
-						opt->value = 1; \
-						opt->overridden = 1; \
-					} \
-				} \
-			} \
-			if (strncmp(argv[i], "-", 1) == 0 && strlen(argv[i]) == 2) { \
-				for (j = 0; j < len; ++j) { \
-					struct _snow_option *opt = &_snow_opts[j]; \
-					if (argv[i][1] == opt->shortname) { \
-						opt->value = 1; \
-						opt->overridden = 1; \
-					} \
-				} \
-			} \
-			if (strcmp(argv[i], "--log") == 0) { \
-				if (++i >= argc) break; \
-				if (strcmp(argv[i], "-") == 0) \
-					_snow_log_file = stdout; \
-					_snow_log_file = fopen(argv[i], "w"); \
-				if (_snow_log_file == NULL) { \
-					_snow_log_file = stdout; \
-					_snow_print( \
-						"Could not open log file '%s': %s", \
-						argv[i], strerror(errno)); \
-					return -1; \
-				} \
-			} \
+			if (strcmp(argv[i], "--color") == 0) \
+				_snow_opt_color = 1; \
+			else if (strcmp(argv[i], "--no-color") == 0) \
+				_snow_opt_color = 0; \
+			else if ( \
+					strcmp(argv[i], "--version") == 0 || \
+					strcmp(argv[i], "-v") == 0) \
+				_snow_opt_version = 1; \
+			else if (strcmp(argv[i], "--quiet") == 0) \
+				_snow_opt_quiet = 1; \
 		} \
-		/* Default to no colors if NO_COLOR */ \
-		if (getenv("NO_COLOR") != NULL) { \
-			if (!_snow_opts[_snow_opt_color].overridden) \
-				_snow_opts[_snow_opt_color].value = 0; \
-		} \
-		/* If not a tty, default to "boring" output */ \
-		if (!isatty(fileno(_snow_log_file))) { \
-			if (!_snow_opts[_snow_opt_color].overridden) \
-				_snow_opts[_snow_opt_color].value = 0; \
-			if (!_snow_opts[_snow_opt_maybes].overridden) \
-				_snow_opts[_snow_opt_maybes].value = 0; \
-			if (!_snow_opts[_snow_opt_cr].overridden) \
-				_snow_opts[_snow_opt_cr].value = 0; \
-		} \
-		/* --version: Print version and exit */ \
-		if (_snow_opts[_snow_opt_version].value) { \
+		if (_snow_opt_version) { \
 			printf("Snow %s\n", SNOW_VERSION); \
 			return EXIT_SUCCESS; \
 		} \
-		/* Run tests */ \
 		size_t j; \
 		for (j = 0; j < _snow_describes.count; ++j) { \
 			_snow_describes.describes[j](); \
 		} \
-		/* Cleanup, print result */ \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
-		if (_snow_num_defines > 1 || _snow_opts[_snow_opt_quiet].value) { \
-			if (_snow_opts[_snow_opt_color].value) { \
-				_snow_print( \
+		if (_snow_num_defines > 1 || _snow_opt_quiet) { \
+			if (_snow_opt_color) { \
+				fprintf(stdout, \
 					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n" \
 					_SNOW_COLOR_RESET, \
 					_snow_global_successes, _snow_global_total); \
 			} else { \
-				_snow_print( \
+				fprintf(stdout, \
 					"Total: Passed %i/%i tests.\n", \
 					_snow_global_successes, _snow_global_total); \
 			} \
-			if (!_snow_opts[_snow_opt_quiet].value) \
-				_snow_print("\n"); \
+			if (!_snow_opt_quiet) \
+				fprintf(stdout, "\n"); \
 		} \
 		return _snow_exit_code; \
 	}

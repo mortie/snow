@@ -11,9 +11,9 @@ set(VGFLAGS --quiet --leak-check=full --show-leak-kinds=all --track-origins=yes)
 add_executable(exampleproject ${SOURCES})
 
 add_executable(exampleproject-test ${SOURCES})
-set_target_properties(exampleproject-test
+set_target_properties(test
 	PROPERTIES COMPILE_FLAGS "-g -DSNOW_ENABLED")
 
 add_custom_target(run-tests
-	COMMAND valgrind ${VGFLAGS} ./exampleproject-test
+	COMMAND valgrind ${VGFLAGS} ./test
 	DEPENDS exampleproject-test)
