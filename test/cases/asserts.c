@@ -50,4 +50,40 @@ describe(asserteq_buf, {
 	test("neq failure", { assertneq_buf(buf1, buf1, len); });
 });
 
+describe(asserteq, {
+	test("eq success", { asserteq(1, 1); });
+	test("eq failure", { asserteq(1, 2); });
+
+	test("eq success", { asserteq(1.0, 1.0); });
+	test("eq failure", { asserteq(1.0, 2.0); });
+
+	int *ptr1 = calloc(1, sizeof(int));
+	int *ptr2 = calloc(1, sizeof(int));
+	test("eq success", { asserteq(ptr1, ptr1); });
+	test("eq failure", { asserteq(ptr1, ptr2); });
+	free(ptr1);
+	free(ptr2);
+
+	test("eq success", { asserteq("hello", "hello"); });
+	test("eq failure", { asserteq("hello", "world"); });
+});
+
+describe(assertneq, {
+	test("neq failure", { assertneq(1, 1); });
+	test("neq success", { assertneq(1, 2); });
+
+	test("neq failure", { assertneq(1.0, 1.0); });
+	test("neq success", { assertneq(1.0, 2.0); });
+
+	int *ptr1 = calloc(1, sizeof(int));
+	int *ptr2 = calloc(1, sizeof(int));
+	test("neq failure", { assertneq(ptr1, ptr1); });
+	test("neq success", { assertneq(ptr1, ptr2); });
+	free(ptr1);
+	free(ptr2);
+
+	test("neq failure", { assertneq("hello", "hello"); });
+	test("neq success", { assertneq("hello", "world"); });
+});
+
 snow_main();
