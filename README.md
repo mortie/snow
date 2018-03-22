@@ -29,7 +29,7 @@ will take these arguments. The **--no-** prefixed arguments will disable the
 relevant function:
 
 * **--version**, **-v**: Show the current version and exit.
-* **--help**, **-h**: Show usage information and exit.
+* **--help**, **-h**: Show usage and exit.
 * **--color**, **-c**, or **--no-color**: Enable the use of color.
   Default: on when output is a TTY, off otherwise.
 * **--quiet**, **-q**, or **--no-quiet**: Suppress most messages, only test faulures
