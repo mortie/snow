@@ -593,6 +593,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				if (++i >= argc) break; \
 				if (strcmp(argv[i], "-") == 0) \
 					_snow_log_file = stdout; \
+				else \
 					_snow_log_file = fopen(argv[i], "w"); \
 				if (_snow_log_file == NULL) { \
 					_snow_log_file = stdout; \
