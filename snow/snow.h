@@ -467,6 +467,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 #define test(testdesc, ...) \
 	do { \
 		__label__ _snow_done; \
+		/* This is to make Clang shut up about "indirect goto in function */ \
+		/* with no address-of-label expressions" when there's no defer(). */ \
+		__attribute__((unused)) void *_snow_unused_label = &&_snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
