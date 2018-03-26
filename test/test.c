@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -14,7 +15,14 @@ static int bufeq(char *b1, char *b2, size_t len)
 	return 1;
 }
 
-static int getresults(FILE *f, int *results, size_t count)
+#define SUCCESS 1
+#define FAILURE 0
+
+/*
+ * Returns the amount of results. Fills the 'results' array with whether
+ * a test failed or not.
+ */
+static int getResults(FILE *f, int *results, size_t count)
 {
 	char success[] = "✓";
 	char failure[] = "✕";
@@ -55,8 +63,46 @@ static int getresults(FILE *f, int *results, size_t count)
 	return resultidx;
 }
 
-#define SUCCESS 1
-#define FAILURE 0
+/*
+ * Compare two files.
+ * 1 means they're the same, 0 means they're different.
+ */
+static int compareFiles(FILE *f1, FILE *f2)
+{
+	int c1, c2;
+	int cnt = 0;
+	do
+	{
+		c1 = fgetc(f1);
+		c2 = fgetc(f2);
+		if (c1 != c2)
+		{
+			return 0;
+		}
+		cnt += 1;
+	} while (c1 != EOF && c2 != EOF);
+
+	return c1 == c2;
+}
+
+/*
+ * Compare a command's output to a file.
+ * 1 means they're the same, 0 means they're different.
+ */
+static int compareOutput(char *cmd, char *expected)
+{
+	FILE *f1 = popen(cmd, "r");
+
+	char path[256];
+	path[sizeof(path) - 1] = '\0';
+	snprintf(path, sizeof(path) - 1, "./expected/%s", expected);
+	FILE *f2 = fopen(path, "r");
+
+	int res = compareFiles(f1, f2);
+	pclose(f1);
+	fclose(f2);
+	return res;
+}
 
 #define EQ_FAILURE 0
 #define EQ_SUCCESS 1
@@ -71,7 +117,7 @@ describe(asserts, {
 
 	test("asserteq_int, assertneq_int", {
 		int results[4];
-		asserteq(getresults(f, results, 4), 4);
+		asserteq(getResults(f, results, 4), 4);
 
 		asserteq(results[EQ_FAILURE], FAILURE);
 		asserteq(results[EQ_SUCCESS], SUCCESS);
@@ -81,7 +127,7 @@ describe(asserts, {
 
 	test("asserteq_dbl, assertneq_dbl", {
 		int results[4];
-		asserteq(getresults(f, results, 4), 4);
+		asserteq(getResults(f, results, 4), 4);
 
 		asserteq(results[EQ_FAILURE], FAILURE);
 		asserteq(results[EQ_SUCCESS], SUCCESS);
@@ -91,7 +137,7 @@ describe(asserts, {
 
 	test("asserteq_ptr, assertneq_str", {
 		int results[5];
-		asserteq(getresults(f, results, 5), 5);
+		asserteq(getResults(f, results, 5), 5);
 
 		asserteq(results[EQ_FAILURE], FAILURE);
 		asserteq(results[EQ_SUCCESS], SUCCESS);
@@ -102,7 +148,7 @@ describe(asserts, {
 
 	test("asserteq_str, assertneq_str", {
 		int results[4];
-		asserteq(getresults(f, results, 4), 4);
+		asserteq(getResults(f, results, 4), 4);
 
 		asserteq(results[EQ_FAILURE], FAILURE);
 		asserteq(results[EQ_SUCCESS], SUCCESS);
@@ -112,7 +158,7 @@ describe(asserts, {
 
 	test("asserteq_buf, assertneq_buf", {
 		int results[4];
-		asserteq(getresults(f, results, 4), 4);
+		asserteq(getResults(f, results, 4), 4);
 
 		asserteq(results[EQ_FAILURE], FAILURE);
 		asserteq(results[EQ_SUCCESS], SUCCESS);
@@ -122,7 +168,7 @@ describe(asserts, {
 
 	test("asserteq", {
 		int results[8];
-		asserteq(getresults(f, results, 8), 8);
+		asserteq(getResults(f, results, 8), 8);
 
 		asserteq(results[0], SUCCESS);
 		asserteq(results[1], FAILURE);
@@ -139,7 +185,7 @@ describe(asserts, {
 
 	test("assertneq", {
 		int results[8];
-		asserteq(getresults(f, results, 8), 8);
+		asserteq(getResults(f, results, 8), 8);
 
 		asserteq(results[0], FAILURE);
 		asserteq(results[1], SUCCESS);
@@ -155,6 +201,49 @@ describe(asserts, {
 	});
 
 	pclose(f);
+});
+
+describe(commandline, {
+	it("prints usage with -h and --help", {
+		assert(compareOutput("./cases/commandline --help", "commandline-help"));
+		assert(compareOutput("./cases/commandline -h", "commandline-help"));
+	});
+
+	it("prints version with -v and --version", {
+		assert(compareOutput("./cases/commandline --version", "commandline-version"));
+		assert(compareOutput("./cases/commandline -v", "commandline-version"));
+	});
+
+	it("prints only failure and a total with --quiet", {
+		assert(compareOutput("./cases/commandline --quiet", "commandline-quiet"));
+		assert(compareOutput("./cases/commandline -q", "commandline-quiet"));
+	});
+
+	it("prints times", {
+		assert(compareOutput("./cases/commandline", "commandline-timer"));
+		assert(compareOutput("./cases/commandline -t", "commandline-timer"));
+		assert(compareOutput("./cases/commandline --timer", "commandline-timer"));
+	});
+
+	it("prints no times with --no-timer", {
+		assert(compareOutput("./cases/commandline --no-timer", "commandline-no-timer"));
+	});
+
+	it("logs to the file specified with --log", {
+		int res = compareOutput("./cases/commandline --log tmpfile", "commandline-log-stdout");
+		defer(unlink("tmpfile"));
+		assert(res);
+
+		FILE *f1 = fopen("tmpfile", "r");
+		assertneq(f1, NULL);
+		defer(fclose(f1));
+
+		FILE *f2 = fopen("./expected/commandline-log-output", "r");
+		assertneq(f2, NULL);
+		defer(fclose(f2));
+
+		assert(compareFiles(f1, f2));
+	});
 });
 
 snow_main();

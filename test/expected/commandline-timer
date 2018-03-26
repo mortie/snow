@@ -1,0 +1,8 @@
+
+Testing test:
+✓ Success: success: 1.00s
+✕ Failed:  failure:
+    Assertion failed: 0
+    in cases/commandline.c:test
+test: Passed 1/2 tests.
+
