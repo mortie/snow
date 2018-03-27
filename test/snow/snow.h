@@ -14,14 +14,21 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/time.h>
 
-#define SNOW_VERSION "1.1.0"
+#define SNOW_VERSION "1.2.0"
 
 #ifndef SNOW_COLOR_SUCCESS
 #define SNOW_COLOR_SUCCESS "\033[32m"
+#endif
+
+#ifndef SNOW_COLOR_MAYBE
+#define SNOW_COLOR_MAYBE "\033[35m"
 #endif
 
 #ifndef SNOW_COLOR_FAIL
@@ -35,14 +42,34 @@
 #define _SNOW_COLOR_BOLD    "\033[1m"
 #define _SNOW_COLOR_RESET   "\033[0m"
 
+// Compatibility with MinGW
+#ifdef __MINGW32__
+#  include <io.h>
+#  ifdef __WIN64
+#    define _SNOW_PRIuSIZE PRIu64
+#  else
+#    define _SNOW_PRIuSIZE PRIu32
+#  endif
+// cmd.exe is identified as a tty but doesn't understand escape sequences,
+// git bash understand escape sequences but isn't identified as a TTY
+// by _isatty(_fileno(stdout))
+#  define _SNOW_ISATTY(file) 0
+#else
+#  define _SNOW_PRIuSIZE "zu"
+#  define _SNOW_ISATTY(file) isatty(fileno(file))
+// For stdio.h to define fileno, _POSIX_C_SOURCE or similar has to be defined
+// before stdio.h is included. I want Snow to work without any other compiler
+// flags than -DSNOW_ENABLED.
+int fileno(FILE *stream);
+#endif
+
+extern FILE *_snow_log_file;
+
 extern int _snow_exit_code;
 extern int _snow_extra_newline;
 extern int _snow_global_total;
 extern int _snow_global_successes;
 extern int _snow_num_defines;
-
-extern int _snow_opt_color;
-extern int _snow_opt_quiet;
 
 struct _snow_labels { 
 	void **labels;
@@ -58,25 +85,82 @@ struct _snow_describes {
 };
 extern struct _snow_describes _snow_describes;
 
+typedef enum
+{
+	_snow_opt_version,
+	_snow_opt_help,
+	_snow_opt_color,
+	_snow_opt_quiet,
+	_snow_opt_maybes,
+	_snow_opt_cr,
+	_snow_opt_timer,
+} _snow_opt_names;
+
+struct _snow_option
+{
+	char *fullname;
+	char shortname;
+	int value;
+	int overridden;
+};
+extern struct _snow_option _snow_opts[];
+
+extern struct timeval _snow_timer;
+
+#define _snow_print(...) \
+	do { \
+		fprintf(_snow_log_file, __VA_ARGS__); \
+		fflush(_snow_log_file); \
+	} while (0)
+
+#define _snow_print_timer() \
+	do { \
+		if (_snow_opts[_snow_opt_timer].value) \
+		{ \
+			struct timeval now; \
+			gettimeofday(&now, NULL); \
+			double before_ms = _snow_timer.tv_sec * 1000.0 + _snow_timer.tv_usec / 1000.0; \
+			double now_ms = now.tv_sec * 1000.0 + now.tv_usec / 1000.0; \
+			double ms = now_ms - before_ms; \
+			if (ms < 1000) \
+				_snow_print(": %.2fms\n", ms); \
+			else \
+				_snow_print(": %.2fs\n", ms / 1000); \
+		} \
+		else \
+			_snow_print("\n"); \
+	} \
+	while (0)
+
+#define _snow_print_result_newline() \
+	do { \
+		if (_snow_opts[_snow_opt_maybes].value) {\
+			if (_snow_opts[_snow_opt_cr].value) \
+				_snow_print("\r"); \
+			else \
+				_snow_print("\n"); \
+		} \
+	} while (0)
+
 #define _snow_fail(desc, spaces, name, file, ...) \
 	do { \
+		_snow_print_result_newline(); \
 		_snow_extra_newline = 1; \
 		_snow_exit_code = EXIT_FAILURE; \
-		if (_snow_opt_color) { \
-			fprintf(stdout, \
+		if (_snow_opts[_snow_opt_color].value) { \
+			_snow_print( \
 				_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "%s✕ " \
 				_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  " \
 				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-				_SNOW_COLOR_RESET ":\n%s    ", \
-				spaces, desc, spaces); \
+				_SNOW_COLOR_RESET ":", \
+				spaces, desc); \
 		} else { \
-			fprintf(stdout, \
-				"%s✕ Failed:  %s:\n%s    ", \
-				spaces, desc, spaces); \
+			_snow_print("%s✕ Failed:  %s:", spaces, desc); \
 		} \
-		fprintf(stdout, __VA_ARGS__); \
-		fprintf(stdout, \
-			"\n%s    in %s:%s\n", spaces, file, name); \
+		_snow_print("\n"); \
+		_snow_print("%s    ", spaces); \
+		_snow_print(__VA_ARGS__); \
+		_snow_print("\n%s    in %s:%s\n", spaces, file, name); \
 	} while (0)
 
 #define fail(...) \
@@ -121,7 +205,7 @@ extern struct _snow_describes _snow_describes;
 		return 0; \
 	}
 
-_snow_decl_asserteq(int, intmax_t, "%ji")
+_snow_decl_asserteq(int, intmax_t, "%" PRIdMAX)
 _snow_decl_assertneq(int, intmax_t)
 #define asserteq_int(a, b) \
 	do { \
@@ -212,7 +296,7 @@ static int __attribute__((unused)) _snow_asserteq_buf(
 		{
 			_snow_fail(
 				desc, spaces, name, file,
-				"Expected %s to equal %s, but they differ at byte %zi",
+				"Expected %s to equal %s, but they differ at byte %" _SNOW_PRIuSIZE,
 				astr, bstr, i);
 			return -1;
 		}
@@ -290,7 +374,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
-#else
+
+#else // __STDC_VERSION__ >= 201112L
 
 #define asserteq(a, b) _Pragma("GCC error \"asserteq requires support for C11.\"")
 #define assertneq(a, b) _Pragma("GCC error \"assertneq requires support for C11.\"")
@@ -299,34 +384,55 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_success() \
 	do { \
-		if (_snow_opt_quiet) break; \
+		_snow_print_result_newline(); \
+		if (_snow_opts[_snow_opt_quiet].value) break; \
 		_snow_extra_newline = 1; \
-		if (_snow_opt_color) { \
-			fprintf(stdout, \
+		if (_snow_opts[_snow_opt_color].value) { \
+			_snow_print( \
 				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "%s✓ " \
 				_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
 				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-				_SNOW_COLOR_RESET "\n", \
+				_SNOW_COLOR_RESET, \
 				_snow_spaces, _snow_desc); \
 		} else { \
-			fprintf(stdout, \
-				"%s✓ Success: %s\n", \
+			_snow_print( \
+				"%s✓ Success: %s", \
+				_snow_spaces, _snow_desc); \
+		} \
+		_snow_print_timer(); \
+	} while (0)
+
+#define _snow_print_maybe() \
+	do { \
+		if (_snow_opts[_snow_opt_quiet].value) break; \
+		if (!_snow_opts[_snow_opt_maybes].value) break; \
+		_snow_extra_newline = 1; \
+		if (_snow_opts[_snow_opt_color].value) { \
+			_snow_print( \
+				_SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "%s? " \
+				_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: " \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " \
+				_SNOW_COLOR_RESET, \
+				_snow_spaces, _snow_desc); \
+		} else { \
+			_snow_print( \
+				"%s? Testing: %s: ", \
 				_snow_spaces, _snow_desc); \
 		} \
 	} while (0)
 
 #define _snow_print_run() \
 	do { \
-		if (_snow_opt_quiet) break; \
+		if (_snow_opts[_snow_opt_quiet].value) break; \
 		if (_snow_extra_newline) { \
-			fprintf(stdout, "\n"); \
+			_snow_print("\n"); \
 		} \
-		if (_snow_opt_color) { \
-			fprintf(stdout, \
+		if (_snow_opts[_snow_opt_color].value) { \
+			_snow_print( \
 				_SNOW_COLOR_BOLD "%sTesting %s:" _SNOW_COLOR_RESET "\n", \
 				_snow_spaces, _snow_name); \
 		} else { \
-			fprintf(stdout, \
+			_snow_print( \
 				"%sTesting %s:\n", \
 				_snow_spaces, _snow_name); \
 		} \
@@ -334,15 +440,15 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_print_done() \
 	do { \
-		if (_snow_opt_quiet) break; \
+		if (_snow_opts[_snow_opt_quiet].value) break; \
 		_snow_extra_newline = 0; \
-		if (_snow_opt_color) { \
-			fprintf(stdout, \
+		if (_snow_opts[_snow_opt_color].value) { \
+			_snow_print( \
 				_SNOW_COLOR_BOLD "%s%s: Passed %i/%i tests." \
 				_SNOW_COLOR_RESET "\n\n", \
 				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
 		} else { \
-			fprintf(stdout, \
+			_snow_print( \
 				"%s%s: Passed %i/%i tests.\n\n", \
 				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
 		} \
@@ -380,9 +486,14 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 #define test(testdesc, ...) \
 	do { \
 		__label__ _snow_done; \
+		/* This is to make Clang shut up about "indirect goto in function */ \
+		/* with no address-of-label expressions" when there's no defer(). */ \
+		__attribute__((unused)) void *_snow_unused_label = &&_snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
+		_snow_print_maybe(); \
+		gettimeofday(&_snow_timer, NULL); \
 		__VA_ARGS__ \
 		_snow_successes += 1; \
 		_snow_print_success(); \
@@ -434,7 +545,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
 	} \
-	__attribute__((constructor)) \
+	__attribute__((constructor (__COUNTER__ + 101))) \
 	static void _snow_constructor_##testname() { \
 		_snow_describes.count += 1; \
 		if (_snow_describes.count >= _snow_describes.size) { \
@@ -450,62 +561,158 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			&test_##testname; \
 	}
 
+#define _snow_usage(argv0) \
+	do { \
+		_snow_print("Usage: %s [options]     Run all tests.\n", argv0); \
+		_snow_print("       %s -v|--version  Print version and exit.\n", argv0); \
+		_snow_print("       %s -h|--help     Display this help text and exit.\n", argv0); \
+		_snow_print( \
+			"\n" \
+			"Arguments:\n" \
+			"    --color|-c:   Enable colors.\n" \
+			"                  Default: on when output is a TTY.\n" \
+			"    --no-color:   Force disable --color.\n" \
+			"\n" \
+			"    --quiet|-q:   Suppress most messages, only test failures and a summary\n" \
+			"                  error count is shown.\n" \
+			"                  Default: off.\n" \
+			"    --no-quiet:   Force disable --quiet.\n" \
+			"\n" \
+			"    --log <file>: Log output to a file, rather than stdout.\n" \
+			"\n" \
+			"    --timer|-t:   Display the time taken for by each test after\n" \
+			"                  it is completed.\n" \
+			"                  Default: on.\n" \
+			"    --no-timer:   Force disable --timer.\n" \
+			"\n" \
+			"    --maybes|-m:  Print out messages when begining a test as well\n" \
+			"                  as when it is completed.\n" \
+			"                  Default: on when the output is a TTY.\n" \
+			"    --no-maybes:  Force disable --maybes.\n" \
+			"\n" \
+			"    --cr:         Print a carriage return (\\r) rather than a newline\n" \
+			"                  after each --maybes message. This means that the fail or\n" \
+			"                  success message will appear on the same line.\n" \
+			"                  Default: on when the output is a TTY.\n" \
+			"    --no-cr:      Force disable --cr.\n"); \
+	} while (0)
+
 #define snow_main() \
 	int _snow_exit_code = EXIT_SUCCESS; \
 	int _snow_extra_newline = 1; \
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
-	int _snow_opt_color = 1; \
-	int _snow_opt_quiet = 0; \
-	int _snow_opt_version = 0; \
+	FILE *_snow_log_file; \
+	struct timeval _snow_timer; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
+	struct _snow_option _snow_opts[] = { \
+		[_snow_opt_version] = { "version", 'v',  0, 0 }, \
+		[_snow_opt_help]    = { "help",    'h',  0, 0 }, \
+		[_snow_opt_color]   = { "color",   'c',  1, 0 }, \
+		[_snow_opt_quiet]   = { "quiet",   'q',  0, 0 }, \
+		[_snow_opt_maybes]  = { "maybes",  'm',  1, 0 }, \
+		[_snow_opt_cr]      = { "cr",      '\0', 1, 0 }, \
+		[_snow_opt_timer]   = { "timer",   't',  1, 0 }, \
+	}; \
 	int main(int argc, char **argv) { \
-		if (!isatty(1)) \
-			_snow_opt_color = 0; \
-		else if (getenv("NO_COLOR") != NULL) \
-			_snow_opt_color = 0; \
+		_snow_log_file = stdout; \
 		int i; \
 		for (i = 1; i < argc; ++i) { \
-			if (strcmp(argv[i], "--color") == 0) \
-				_snow_opt_color = 1; \
-			else if (strcmp(argv[i], "--no-color") == 0) \
-				_snow_opt_color = 0; \
-			else if ( \
-					strcmp(argv[i], "--version") == 0 || \
-					strcmp(argv[i], "-v") == 0) \
-				_snow_opt_version = 1; \
-			else if (strcmp(argv[i], "--quiet") == 0) \
-				_snow_opt_quiet = 1; \
+			int j, len; \
+			len = sizeof(_snow_opts)/sizeof(*_snow_opts); \
+			if (strncmp(argv[i], "--no-", 5) == 0) { \
+				for (j = 0; j < len; ++j) { \
+					struct _snow_option *opt = &_snow_opts[j]; \
+					if (strcmp(&argv[i][5], opt->fullname) == 0) { \
+						opt->value = 0; \
+						opt->overridden = 1; \
+					} \
+				} \
+			} \
+			else if (strncmp(argv[i], "--", 2) == 0) { \
+				for (j = 0; j < len; ++j) { \
+					struct _snow_option *opt = &_snow_opts[j]; \
+					if (strcmp(&argv[i][2], opt->fullname) == 0) { \
+						opt->value = 1; \
+						opt->overridden = 1; \
+					} \
+				} \
+			} \
+			if (strncmp(argv[i], "-", 1) == 0 && strlen(argv[i]) == 2) { \
+				for (j = 0; j < len; ++j) { \
+					struct _snow_option *opt = &_snow_opts[j]; \
+					if (argv[i][1] == opt->shortname) { \
+						opt->value = 1; \
+						opt->overridden = 1; \
+					} \
+				} \
+			} \
+			if (strcmp(argv[i], "--log") == 0) { \
+				if (++i >= argc) break; \
+				if (strcmp(argv[i], "-") == 0) \
+					_snow_log_file = stdout; \
+				else \
+					_snow_log_file = fopen(argv[i], "w"); \
+				if (_snow_log_file == NULL) { \
+					_snow_log_file = stdout; \
+					_snow_print( \
+						"Could not open log file '%s': %s", \
+						argv[i], strerror(errno)); \
+					return -1; \
+				} \
+			} \
 		} \
-		if (_snow_opt_version) { \
-			printf("Snow %s\n", SNOW_VERSION); \
+		/* Default to no colors if NO_COLOR */ \
+		if (getenv("NO_COLOR") != NULL) { \
+			if (!_snow_opts[_snow_opt_color].overridden) \
+				_snow_opts[_snow_opt_color].value = 0; \
+		} \
+		/* If not a tty, default to "boring" output */ \
+		if (!_SNOW_ISATTY(_snow_log_file)) { \
+			if (!_snow_opts[_snow_opt_color].overridden) \
+				_snow_opts[_snow_opt_color].value = 0; \
+			if (!_snow_opts[_snow_opt_maybes].overridden) \
+				_snow_opts[_snow_opt_maybes].value = 0; \
+			if (!_snow_opts[_snow_opt_cr].overridden) \
+				_snow_opts[_snow_opt_cr].value = 0; \
+		} \
+		/* --version: Print version and exit */ \
+		if (_snow_opts[_snow_opt_version].value) { \
+			_snow_print("Snow %s\n", SNOW_VERSION); \
 			return EXIT_SUCCESS; \
 		} \
+		/* --help: Print usage and exit */ \
+		if (_snow_opts[_snow_opt_help].value) { \
+			_snow_usage(argv[0]); \
+			return EXIT_SUCCESS; \
+		} \
+		/* Run tests */ \
 		size_t j; \
 		for (j = 0; j < _snow_describes.count; ++j) { \
 			_snow_describes.describes[j](); \
 		} \
+		/* Cleanup, print result */ \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
-		if (_snow_num_defines > 1 || _snow_opt_quiet) { \
-			if (_snow_opt_color) { \
-				fprintf(stdout, \
+		if (_snow_num_defines > 1 || _snow_opts[_snow_opt_quiet].value) { \
+			if (_snow_opts[_snow_opt_color].value) { \
+				_snow_print( \
 					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n" \
 					_SNOW_COLOR_RESET, \
 					_snow_global_successes, _snow_global_total); \
 			} else { \
-				fprintf(stdout, \
+				_snow_print( \
 					"Total: Passed %i/%i tests.\n", \
 					_snow_global_successes, _snow_global_total); \
 			} \
-			if (!_snow_opt_quiet) \
-				fprintf(stdout, "\n"); \
+			if (!_snow_opts[_snow_opt_quiet].value) \
+				_snow_print("\n"); \
 		} \
 		return _snow_exit_code; \
 	}
 
-#endif
+#endif // SNOW_ENABLED
 
-#endif
+#endif // SNOW_H
