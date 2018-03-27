@@ -14,14 +14,14 @@ Some miscellaneous points:
   Clang. It should even work on GCC and Clang versions too old to support C11
   (or even C99), but the convenience `asserteq` and `assertneq` macros require
   C11.
-* Even though Snow is based on passing blocks to the C preprocessor macros,
-  unguarded commas are no problem, because the `block` argument is actually
-  implemented as `...` and expanded with `__VA_ARGS__`.
+* Windows is supported through MinGW, with the caveat that it assumes your
+  terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
+  characters. Color is also disabled on Windows.
 * I really recommend running the test executable with
   [valgrind](http://valgrind.org/). That will help you find memory issues such
   as memory leaks, out of bounds array reads/writes, etc.
 
-## Arguments
+## Usage
 
 When creating the main function using the `snow_main` macro, your executable
 will take these arguments. The **--no-** prefixed arguments will disable the
