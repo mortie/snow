@@ -1,8 +1,7 @@
 # Snow
 
-Snow is a header-only unit testing library for C. The file
-[snow/snow.h](https://github.com/mortie/snow/blob/master/snow/snow.h) should
-be included from the main source file.
+Snow is a header-only unit testing library for C. Just include the file
+[snow/snow.h](https://github.com/mortie/snow/blob/master/snow/snow.h).
 
 ![Screenshot](https://raw.githubusercontent.com/mortie/snow/master/img/screenshot.png)
 
