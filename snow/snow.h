@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -41,9 +42,26 @@
 #define _SNOW_COLOR_BOLD    "\033[1m"
 #define _SNOW_COLOR_RESET   "\033[0m"
 
+// Compatibility with MinGW
+#ifdef __MINGW32__
+#  include <io.h>
+#  ifdef __WIN64
+#    define _SNOW_PRIuSIZE PRIu64
+#  else
+#    define _SNOW_PRIuSIZE PRIu32
+#  endif
+// cmd.exe is identified as a tty but doesn't understand escape sequences,
+// git bash understand escape sequences but isn't identified as a TTY
+// by _isatty(_fileno(stdout))
+#  define _SNOW_ISATTY(file) 0
+#else
+#  define _SNOW_PRIuSIZE "zu"
+#  define _SNOW_ISATTY(file) isatty(fileno(file))
 // For stdio.h to define fileno, _POSIX_C_SOURCE or similar has to be defined
-// before stdio.h is included.
+// before stdio.h is included. I want Snow to work without any other compiler
+// flags than -DSNOW_ENABLED.
 int fileno(FILE *stream);
+#endif
 
 extern FILE *_snow_log_file;
 
@@ -187,7 +205,7 @@ extern struct timeval _snow_timer;
 		return 0; \
 	}
 
-_snow_decl_asserteq(int, intmax_t, "%ji")
+_snow_decl_asserteq(int, intmax_t, "%" PRIdMAX)
 _snow_decl_assertneq(int, intmax_t)
 #define asserteq_int(a, b) \
 	do { \
@@ -278,7 +296,7 @@ static int __attribute__((unused)) _snow_asserteq_buf(
 		{
 			_snow_fail(
 				desc, spaces, name, file,
-				"Expected %s to equal %s, but they differ at byte %zi",
+				"Expected %s to equal %s, but they differ at byte %" _SNOW_PRIuSIZE,
 				astr, bstr, i);
 			return -1;
 		}
@@ -356,7 +374,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
-#else
+
+#else // __STDC_VERSION__ >= 201112L
 
 #define asserteq(a, b) _Pragma("GCC error \"asserteq requires support for C11.\"")
 #define assertneq(a, b) _Pragma("GCC error \"assertneq requires support for C11.\"")
@@ -526,7 +545,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
 	} \
-	__attribute__((constructor)) \
+	__attribute__((constructor (__COUNTER__ + 101))) \
 	static void _snow_constructor_##testname() { \
 		_snow_describes.count += 1; \
 		if (_snow_describes.count >= _snow_describes.size) { \
@@ -651,7 +670,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				_snow_opts[_snow_opt_color].value = 0; \
 		} \
 		/* If not a tty, default to "boring" output */ \
-		if (!isatty(fileno(_snow_log_file))) { \
+		if (!_SNOW_ISATTY(_snow_log_file)) { \
 			if (!_snow_opts[_snow_opt_color].overridden) \
 				_snow_opts[_snow_opt_color].value = 0; \
 			if (!_snow_opts[_snow_opt_maybes].overridden) \
@@ -694,6 +713,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		return _snow_exit_code; \
 	}
 
-#endif
+#endif // SNOW_ENABLED
 
-#endif
+#endif // SNOW_H

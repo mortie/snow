@@ -13,3 +13,6 @@ The `test.c` file uses an old version of the `snow.h` header  in `snow/snow.h`,
 while the programs in `cases/` use the current version of Snow from
 `../snow/snow.h`. The `snow/snow.h` file should be updated to reflect
 `../snow/snow.h` for every release.
+
+On Windows, this test suite assumes you're using MinGW to compile, and Git Bash
+or another Linux-style shell to run the test suite.

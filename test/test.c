@@ -6,6 +6,17 @@
 #include <stdio.h>
 #include <ctype.h>
 
+// This is relatively horrible and does no escaping,
+// so make sure that 'str' doesn't contain a single quote, k?
+// It's here because we want to use sh even on Windows under mingw.
+static FILE *runcmd(char *str)
+{
+	char command[512];
+	snprintf(command, sizeof(command) - 1, "sh -c '%s'", str);
+	command[sizeof(command) - 1] = '\0';
+	return popen(command, "r");
+}
+
 static int bufeq(char *b1, char *b2, size_t len)
 {
 	for (size_t i = 0; i < len; ++i)
@@ -91,7 +102,7 @@ static int compareFiles(FILE *f1, FILE *f2)
  */
 static int compareOutput(char *cmd, char *expected)
 {
-	FILE *f1 = popen(cmd, "r");
+	FILE *f1 = runcmd(cmd);
 
 	char path[256];
 	path[sizeof(path) - 1] = '\0';
@@ -113,7 +124,7 @@ static int compareOutput(char *cmd, char *expected)
 #include <snow/snow.h>
 
 describe(asserts, {
-	FILE *f = popen("./cases/asserts", "r");
+	FILE *f = runcmd("./cases/asserts");
 
 	test("asserteq_int, assertneq_int", {
 		int results[4];
@@ -204,10 +215,15 @@ describe(asserts, {
 });
 
 describe(commandline, {
+// When running with git bash, argv[0] will be an absolute path, so
+// this test case would fail, because it assumes the -h option prints
+// the actual path used to run the binary.
+#ifndef __MINGW32__
 	it("prints usage with -h and --help", {
 		assert(compareOutput("./cases/commandline --help", "commandline-help"));
 		assert(compareOutput("./cases/commandline -h", "commandline-help"));
 	});
+#endif
 
 	it("prints version with -v and --version", {
 		assert(compareOutput("./cases/commandline --version", "commandline-version"));
