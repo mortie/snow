@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mortie/snow.svg?branch=master)](https://travis-ci.org/mortie/snow)
+
 # Snow
 
 Snow is a header-only unit testing library for C. Just include the file
