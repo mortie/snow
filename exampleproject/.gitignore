@@ -1,7 +1,5 @@
-exampleproject
-exampleproject.exe
-test
-test.exe
+test-exampleproject
+test-exampleproject.exe
 vgcore.*
 obj/
 obj-test/

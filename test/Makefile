@@ -5,16 +5,16 @@ CFLAGS ?= -g -Wall -Wextra
 FLAGS = $(CFLAGS) -DSNOW_ENABLED
 VGFLAGS ?= --quiet --leak-check=full --show-leak-kinds=all --track-origins=yes
 
-test: test.c $(CASES) snow/snow.h
+test-snow: test.c $(CASES) snow/snow.h
 	$(CC) -I. $(FLAGS)  -o $@ $<
 
 cases/%: cases/%.c ../snow/snow.h
 	$(CC) -I.. $(FLAGS) -o $@ $<
 
-run-test: test
-	valgrind $(VGFLAGS) ./test
+test: test-snow
+	valgrind $(VGFLAGS) ./test-snow
 
 clean:
-	rm -f test $(CASES)
+	rm -f test-snow $(CASES)
 
-.PHONY: run-test clean
+.PHONY: test clean
