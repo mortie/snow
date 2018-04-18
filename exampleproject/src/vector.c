@@ -1,6 +1,8 @@
 #include "vector.h"
 #include <string.h>
 
+#include <assert.h>
+
 void vector_init(vector *vec, size_t elem_size)
 {
 	vec->size = 0;
