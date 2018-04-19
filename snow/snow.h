@@ -21,7 +21,7 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#define SNOW_VERSION "1.2.0"
+#define SNOW_VERSION "1.3.0"
 
 #ifndef SNOW_COLOR_SUCCESS
 #define SNOW_COLOR_SUCCESS "\033[32m"
