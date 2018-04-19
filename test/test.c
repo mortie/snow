@@ -275,11 +275,13 @@ describe(tests, {
 		assert(compareOutput("./cases/tests a", "tests-single"));
 	});
 
+#ifndef __MINGW32__
 	it("fails when asked to run a non-existant test suite", {
 		asserteq(
 			WEXITSTATUS(system("./cases/tests a b doesnt-exist 2>/dev/null")),
 			EXIT_FAILURE);
 	});
+#endif
 });
 
 snow_main();
