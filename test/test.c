@@ -262,4 +262,14 @@ describe(commandline, {
 	});
 });
 
+describe(tests, {
+    it("performs all the tests", {
+		assert(compareOutput("./cases/tests", "tests-all"));
+    });
+
+	it("performs only a specific test", {
+		assert(compareOutput("./cases/tests a", "tests-specific"));
+	});
+});
+
 snow_main();
