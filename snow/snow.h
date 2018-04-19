@@ -63,6 +63,11 @@
 int fileno(FILE *stream);
 #endif
 
+// Undef the <assert.h> assert macro, because we're defining our own
+#ifdef assert
+#undef assert
+#endif
+
 extern FILE *_snow_log_file;
 
 extern int _snow_exit_code;
