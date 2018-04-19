@@ -4,3 +4,5 @@ cases/asserts
 cases/asserts.exe
 cases/commandline
 cases/commandline.exe
+cases/test
+cases/test.exe

@@ -1,7 +1,7 @@
-Usage: ./cases/commandline [options]         Run all tests.
-       ./cases/commandline [options] <test>  Run a specific test.
-       ./cases/commandline -v|--version      Print version and exit.
-       ./cases/commandline -h|--help         Display this help text and exit.
+Usage: ./cases/commandline [options]            Run all tests.
+       ./cases/commandline [options] <test>...  Run specific tests.
+       ./cases/commandline -v|--version         Print version and exit.
+       ./cases/commandline -h|--help            Display this help text and exit.
 
 Arguments:
     --color|-c:   Enable colors.

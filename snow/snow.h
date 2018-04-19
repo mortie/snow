@@ -576,10 +576,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define _snow_usage(argv0) \
 	do { \
-		_snow_print("Usage: %s [options]         Run all tests.\n", argv0); \
-		_snow_print("       %s [options] <test>  Run a specific test.\n", argv0); \
-		_snow_print("       %s -v|--version      Print version and exit.\n", argv0); \
-		_snow_print("       %s -h|--help         Display this help text and exit.\n", argv0); \
+		_snow_print("Usage: %s [options]            Run all tests.\n", argv0); \
+		_snow_print("       %s [options] <test>...  Run specific tests.\n", argv0); \
+		_snow_print("       %s -v|--version         Print version and exit.\n", argv0); \
+		_snow_print("       %s -h|--help            Display this help text and exit.\n", argv0); \
 		_snow_print( \
 			"\n" \
 			"Arguments:\n" \
