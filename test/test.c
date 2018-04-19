@@ -274,6 +274,12 @@ describe(tests, {
 	it("performs a single test", {
 		assert(compareOutput("./cases/tests a", "tests-single"));
 	});
+
+	it("fails when asked to run a non-existant test suite", {
+		asserteq(
+			WEXITSTATUS(system("./cases/tests a b doesnt-exist 2>/dev/null")),
+			EXIT_FAILURE);
+	});
 });
 
 snow_main();

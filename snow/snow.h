@@ -578,7 +578,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	do { \
 		int i; \
 		int done = 0; \
-		for (i = 0; i < argc; ++i) { \
+		for (i = 1; i < argc; ++i) { \
 			if (argv[i][0] != '-' || done) { \
 				__VA_ARGS__ \
 				continue; \
@@ -702,8 +702,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		/* Parse options, and add non-option arguments to _snow_specific_tests */ \
 		_snow_parse_args(argc, argv, { \
 			size_t j; \
+			int found = 0; \
 			for (j = 0; j < _snow_describes.count; ++j) {\
 				if (strcmp(argv[i], _snow_describes.describes[j].name) == 0) { \
+					found = 1; \
 					_snow_array_append( \
 						_snow_specific_tests, \
 						_snow_specific_tests_count, \
@@ -711,6 +713,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 						_snow_describes.describes[j].func); \
 					break; \
 				} \
+			} \
+			if (!found) { \
+				fprintf(stderr, "Unknown test: %s\n", argv[i]); \
+				return EXIT_FAILURE; \
 			} \
 		}); \
 		/* Default to no colors if NO_COLOR */ \
