@@ -263,12 +263,16 @@ describe(commandline, {
 });
 
 describe(tests, {
-    it("performs all the tests", {
+	it("performs all the tests", {
 		assert(compareOutput("./cases/tests", "tests-all"));
-    });
+	});
 
-	it("performs only a specific test", {
-		assert(compareOutput("./cases/tests a", "tests-specific"));
+	it("performs only a specific set of tests", {
+		assert(compareOutput("./cases/tests a c", "tests-specific"));
+	});
+
+	it("performs a single test", {
+		assert(compareOutput("./cases/tests a", "tests-single"));
 	});
 });
 

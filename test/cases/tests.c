@@ -19,4 +19,14 @@ describe(b, {
 	test("failure", { assert(0); });
 });
 
+describe(c, {
+	test("success", { assert(1); });
+	test("success", { assert(1); });
+});
+
+describe(d, {
+	test("failure", { assert(0); });
+	test("success", { assert(1); });
+});
+
 snow_main();

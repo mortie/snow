@@ -6,10 +6,3 @@ Testing a:
     in cases/tests.c:a
 a: Passed 1/2 tests.
 
-Testing c:
-✓ Success: success: 1.00s
-✓ Success: success: 1.00s
-c: Passed 2/2 tests.
-
-Total: Passed 3/4 tests.
-

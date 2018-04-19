@@ -13,5 +13,17 @@ Testing b:
     in cases/tests.c:b
 b: Passed 1/2 tests.
 
-Total: Passed 2/4 tests.
+Testing c:
+✓ Success: success: 1.00s
+✓ Success: success: 1.00s
+c: Passed 2/2 tests.
+
+Testing d:
+✕ Failed:  failure:
+    Assertion failed: 0
+    in cases/tests.c:d
+✓ Success: success: 1.00s
+d: Passed 1/2 tests.
+
+Total: Passed 5/8 tests.
 

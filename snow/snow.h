@@ -617,7 +617,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
-	void (*_snow_specific_test)() = NULL; \
+	int _snow_specific_tests_count = 0; \
+	int _snow_specific_tests_size = 0; \
+	void (**_snow_specific_tests)() = NULL; \
 	FILE *_snow_log_file; \
 	struct timeval _snow_timer; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
@@ -683,8 +685,18 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			else { \
 				size_t j; \
 				for (j = 0; j < _snow_describes.count; ++j) {\
-					if (strcmp(argv[i], _snow_describes.describes[j].name) == 0) {\
-						_snow_specific_test = _snow_describes.describes[j].func; \
+					if (strcmp(argv[i], _snow_describes.describes[j].name) == 0) { \
+						_snow_specific_tests_count += 1; \
+						if (_snow_specific_tests_count >= _snow_specific_tests_size) { \
+							if (_snow_specific_tests_size == 0) \
+								_snow_specific_tests_size = 16; \
+							else \
+								_snow_specific_tests_size *= 2; \
+							_snow_specific_tests = (void (**)())realloc( \
+									_snow_specific_tests, \
+									_snow_specific_tests_size * sizeof(*_snow_specific_tests)); \
+						} \
+						_snow_specific_tests[_snow_specific_tests_count - 1] = _snow_describes.describes[j].func; \
 						break; \
 					} \
 				} \
@@ -714,9 +726,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_usage(argv[0]); \
 			return EXIT_SUCCESS; \
 		} \
-		if (_snow_specific_test != NULL) { \
-			/* Run specific test */\
-			_snow_specific_test(); \
+		if (_snow_specific_tests != NULL) { \
+			/* Run specific tests */\
+			int j; \
+			for (j = 0; j < _snow_specific_tests_count; ++j) { \
+				_snow_specific_tests[j](); \
+			} \
 		} \
 		else { \
 			/* Run tests */ \
@@ -728,6 +743,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		/* Cleanup, print result */ \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
+		if (_snow_specific_tests != NULL) \
+			free(_snow_specific_tests); \
 		if (_snow_num_defines > 1 || _snow_opts[_snow_opt_quiet].value) { \
 			if (_snow_opts[_snow_opt_color].value) { \
 				_snow_print( \
