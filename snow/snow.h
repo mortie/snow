@@ -76,15 +76,21 @@ extern int _snow_global_total;
 extern int _snow_global_successes;
 extern int _snow_num_defines;
 
-struct _snow_labels { 
+struct _snow_labels {
 	void **labels;
 	size_t size;
 	size_t count;
 };
 extern struct _snow_labels _snow_labels;
 
-struct _snow_describes { 
-	void (**describes)();
+struct _snow_describe {
+	void (*func)();
+	char *name;
+};
+extern struct _snow_describe _snow_describe;
+
+struct _snow_describes {
+	struct _snow_describe *describes;
 	size_t size;
 	size_t count;
 };
@@ -558,19 +564,22 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				_snow_describes.size = 16; \
 			else \
 				_snow_describes.size *= 2; \
-			_snow_describes.describes = (void (**)())realloc( \
+			_snow_describes.describes = (struct _snow_describe *)realloc( \
 				_snow_describes.describes, \
 				_snow_describes.size * sizeof(*_snow_describes.describes)); \
 		} \
-		_snow_describes.describes[_snow_describes.count - 1] = \
+		_snow_describes.describes[_snow_describes.count - 1].func = \
 			&test_##testname; \
+		_snow_describes.describes[_snow_describes.count - 1].name = \
+			#testname; \
 	}
 
 #define _snow_usage(argv0) \
 	do { \
-		_snow_print("Usage: %s [options]     Run all tests.\n", argv0); \
-		_snow_print("       %s -v|--version  Print version and exit.\n", argv0); \
-		_snow_print("       %s -h|--help     Display this help text and exit.\n", argv0); \
+		_snow_print("Usage: %s [options]         Run all tests.\n", argv0); \
+		_snow_print("       %s [options] <test>  Run a specific test.\n", argv0); \
+		_snow_print("       %s -v|--version      Print version and exit.\n", argv0); \
+		_snow_print("       %s -h|--help         Display this help text and exit.\n", argv0); \
 		_snow_print( \
 			"\n" \
 			"Arguments:\n" \
@@ -608,6 +617,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
+	int _snow_specific_tests_count = 0; \
+	int _snow_specific_tests_size = 0; \
+	void (**_snow_specific_tests)() = NULL; \
 	FILE *_snow_log_file; \
 	struct timeval _snow_timer; \
 	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
@@ -625,47 +637,68 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_log_file = stdout; \
 		int i; \
 		for (i = 1; i < argc; ++i) { \
-			int j, len; \
-			len = sizeof(_snow_opts)/sizeof(*_snow_opts); \
-			if (strncmp(argv[i], "--no-", 5) == 0) { \
-				for (j = 0; j < len; ++j) { \
-					struct _snow_option *opt = &_snow_opts[j]; \
-					if (strcmp(&argv[i][5], opt->fullname) == 0) { \
-						opt->value = 0; \
-						opt->overridden = 1; \
+			if (argv[i][0] == '-') { \
+				int j; \
+				int len = sizeof(_snow_opts)/sizeof(*_snow_opts); \
+				if (strncmp(argv[i], "--no-", 5) == 0) { \
+					for (j = 0; j < len; ++j) { \
+						struct _snow_option *opt = &_snow_opts[j]; \
+						if (strcmp(&argv[i][5], opt->fullname) == 0) { \
+							opt->value = 0; \
+							opt->overridden = 1; \
+						} \
+					} \
+				} \
+				else if (strncmp(argv[i], "--", 2) == 0) { \
+					for (j = 0; j < len; ++j) { \
+						struct _snow_option *opt = &_snow_opts[j]; \
+						if (strcmp(&argv[i][2], opt->fullname) == 0) { \
+							opt->value = 1; \
+							opt->overridden = 1; \
+						} \
+					} \
+				} \
+				if (strncmp(argv[i], "-", 1) == 0 && strlen(argv[i]) == 2) { \
+					for (j = 0; j < len; ++j) { \
+						struct _snow_option *opt = &_snow_opts[j]; \
+						if (argv[i][1] == opt->shortname) { \
+							opt->value = 1; \
+							opt->overridden = 1; \
+						} \
+					} \
+				} \
+				if (strcmp(argv[i], "--log") == 0) { \
+					if (++i >= argc) break; \
+					if (strcmp(argv[i], "-") == 0) \
+						_snow_log_file = stdout; \
+					else \
+						_snow_log_file = fopen(argv[i], "w"); \
+					if (_snow_log_file == NULL) { \
+						_snow_log_file = stdout; \
+						_snow_print( \
+							"Could not open log file '%s': %s", \
+							argv[i], strerror(errno)); \
+						return -1; \
 					} \
 				} \
 			} \
-			else if (strncmp(argv[i], "--", 2) == 0) { \
-				for (j = 0; j < len; ++j) { \
-					struct _snow_option *opt = &_snow_opts[j]; \
-					if (strcmp(&argv[i][2], opt->fullname) == 0) { \
-						opt->value = 1; \
-						opt->overridden = 1; \
+			else { \
+				size_t j; \
+				for (j = 0; j < _snow_describes.count; ++j) {\
+					if (strcmp(argv[i], _snow_describes.describes[j].name) == 0) { \
+						_snow_specific_tests_count += 1; \
+						if (_snow_specific_tests_count >= _snow_specific_tests_size) { \
+							if (_snow_specific_tests_size == 0) \
+								_snow_specific_tests_size = 16; \
+							else \
+								_snow_specific_tests_size *= 2; \
+							_snow_specific_tests = (void (**)())realloc( \
+									_snow_specific_tests, \
+									_snow_specific_tests_size * sizeof(*_snow_specific_tests)); \
+						} \
+						_snow_specific_tests[_snow_specific_tests_count - 1] = _snow_describes.describes[j].func; \
+						break; \
 					} \
-				} \
-			} \
-			if (strncmp(argv[i], "-", 1) == 0 && strlen(argv[i]) == 2) { \
-				for (j = 0; j < len; ++j) { \
-					struct _snow_option *opt = &_snow_opts[j]; \
-					if (argv[i][1] == opt->shortname) { \
-						opt->value = 1; \
-						opt->overridden = 1; \
-					} \
-				} \
-			} \
-			if (strcmp(argv[i], "--log") == 0) { \
-				if (++i >= argc) break; \
-				if (strcmp(argv[i], "-") == 0) \
-					_snow_log_file = stdout; \
-				else \
-					_snow_log_file = fopen(argv[i], "w"); \
-				if (_snow_log_file == NULL) { \
-					_snow_log_file = stdout; \
-					_snow_print( \
-						"Could not open log file '%s': %s", \
-						argv[i], strerror(errno)); \
-					return -1; \
 				} \
 			} \
 		} \
@@ -693,14 +726,25 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_usage(argv[0]); \
 			return EXIT_SUCCESS; \
 		} \
-		/* Run tests */ \
-		size_t j; \
-		for (j = 0; j < _snow_describes.count; ++j) { \
-			_snow_describes.describes[j](); \
+		if (_snow_specific_tests != NULL) { \
+			/* Run specific tests */\
+			int j; \
+			for (j = 0; j < _snow_specific_tests_count; ++j) { \
+				_snow_specific_tests[j](); \
+			} \
+		} \
+		else { \
+			/* Run tests */ \
+			size_t j; \
+			for (j = 0; j < _snow_describes.count; ++j) { \
+				_snow_describes.describes[j].func(); \
+			} \
 		} \
 		/* Cleanup, print result */ \
 		free(_snow_labels.labels); \
 		free(_snow_describes.describes); \
+		if (_snow_specific_tests != NULL) \
+			free(_snow_specific_tests); \
 		if (_snow_num_defines > 1 || _snow_opts[_snow_opt_quiet].value) { \
 			if (_snow_opts[_snow_opt_color].value) { \
 				_snow_print( \

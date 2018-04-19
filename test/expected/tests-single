@@ -1,0 +1,8 @@
+
+Testing a:
+✓ Success: success: 1.00s
+✕ Failed:  failure:
+    Assertion failed: 0
+    in cases/tests.c:a
+a: Passed 1/2 tests.
+
