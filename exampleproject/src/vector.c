@@ -48,18 +48,19 @@ void *vector_get(vector *vec, size_t idx)
 
 #include <snow/snow.h>
 
-#define setup(name, size) \
-	vector name; \
-	vector_init(&name, size); \
-	defer(vector_free(&name))
-
 describe(vector, {
+	vector vec;
+
 	it("breaks the rules of math (to demonstrate failed tests)", {
 		assert(1 == 2);
 	});
 
+	after_each({
+		vector_free(&vec);
+	});
+
 	it("inits vectors correctly", {
-		setup(vec, 53);
+		vector_init(&vec, 53);
 
 		asserteq(vec.size, 0);
 		asserteq(vec.count, 0);
@@ -68,7 +69,7 @@ describe(vector, {
 	});
 
 	it("allocates vectors based on elem_size", {
-		setup(vec, sizeof(int));
+		vector_init(&vec, sizeof(int));
 
 		vector_alloc(&vec, 10);
 		asserteq(vec.elem_size, sizeof(int));
@@ -80,9 +81,15 @@ describe(vector, {
 	});
 
 	subdesc(vector_set, {
-		it("sets values inside of the allocated range", {
-			setup(vec, sizeof(int));
+		before_each({
+			vector_init(&vec, sizeof(int));
+		});
 
+		after_each({
+			vector_free(&vec);
+		});
+
+		it("sets values inside of the allocated range", {
 			vector_alloc(&vec, 2);
 			int el = 10;
 			vector_set(&vec, 1, &el);
@@ -90,8 +97,6 @@ describe(vector, {
 		});
 
 		it("allocates space when setting values outside the allocated range", {
-			setup(vec, sizeof(int));
-
 			int el = 10;
 			vector_set(&vec, 50, &el);
 			asserteq(*(int *)(vec.elems + (sizeof(int) * 50)), 10);
@@ -99,17 +104,21 @@ describe(vector, {
 	});
 
 	subdesc(vector_get, {
-		it("gets values inside the allocated range", {
-			setup(vec, sizeof(int));
+		before_each({
+			vector_init(&vec, sizeof(int));
+		});
 
+		after_each({
+			vector_free(&vec);
+		});
+
+		it("gets values inside the allocated range", {
 			int el = 500;
 			vector_set(&vec, 10, &el);
 			asserteq(*(int *)vector_get(&vec, 10), 500);
 		});
 
 		it("returns NULL when trying to access values outside the allocated range", {
-			setup(vec, sizeof(int));
-
 			int el = 10;
 			vector_set(&vec, 100, &el);
 			asserteq(vector_get(&vec, 101), NULL);

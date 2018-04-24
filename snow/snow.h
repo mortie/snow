@@ -106,7 +106,7 @@ struct _snow_labels {
 	size_t size;
 	size_t count;
 };
-extern struct _snow_labels _snow_labels;
+extern struct _snow_labels _snow_defer_labels;
 
 struct _snow_describe {
 	void (*func)();
@@ -511,28 +511,60 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (_snow_rundefer) { \
 			__VA_ARGS__; \
 			/* Go to the previous defer, or the end of the `it` block */ \
-			if (_snow_labels.count > 0) \
-				goto *_snow_labels.labels[--_snow_labels.count]; \
+			if (_snow_defer_labels.count > 0) \
+				goto *_snow_defer_labels.labels[--_snow_defer_labels.count]; \
 			else \
 				goto _snow_done; \
 		} else { \
 			_snow_array_append( \
-				_snow_labels.labels, \
-				_snow_labels.count, \
-				_snow_labels.size, \
+				_snow_defer_labels.labels, \
+				_snow_defer_labels.count, \
+				_snow_defer_labels.size, \
 				&&_snow_defer_label); \
+		} \
+	} while (0)
+
+#define before_each(...) \
+	do { \
+		__label__ _snow_around_label; \
+		_snow_around_label: \
+		if (_snow_runaround) { \
+			__VA_ARGS__ \
+			_snow_runaround = 0; \
+			goto *_snow_around_return; \
+		} else { \
+			_snow_before_each = &&_snow_around_label; \
+		} \
+	} while (0)
+
+#define after_each(...) \
+	do { \
+		__label__ _snow_around_label; \
+		_snow_around_label: \
+		if (_snow_runaround) { \
+			__VA_ARGS__ \
+			_snow_runaround = 0; \
+			goto *_snow_around_return; \
+		} else { \
+			_snow_after_each = &&_snow_around_label; \
 		} \
 	} while (0)
 
 #define test(testdesc, ...) \
 	do { \
-		__label__ _snow_done; \
+		__label__ _snow_done, _snow_begin_done, _snow_after_done; \
 		/* This is to make Clang shut up about "indirect goto in function */ \
 		/* with no address-of-label expressions" when there's no defer(). */ \
 		__attribute__((unused)) void *_snow_unused_label = &&_snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
+		if (_snow_before_each != NULL) { \
+			_snow_runaround = 1; \
+			_snow_around_return = &&_snow_begin_done; \
+			goto *_snow_before_each; \
+		} \
+		_snow_begin_done: \
 		_snow_print_maybe(); \
 		gettimeofday(&_snow_timer, NULL); \
 		__VA_ARGS__ \
@@ -541,10 +573,17 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_done: \
 		__attribute__((unused)); \
 		_snow_rundefer = 1; \
-		if (_snow_labels.count > 0) { \
-			_snow_labels.count -= 1; \
-			goto *_snow_labels.labels[_snow_labels.count]; \
+		if (_snow_defer_labels.count > 0) { \
+			_snow_defer_labels.count -= 1; \
+			goto *_snow_defer_labels.labels[_snow_defer_labels.count]; \
 		} \
+		if (_snow_after_each != NULL) { \
+			_snow_runaround = 1; \
+			_snow_around_return = &&_snow_after_done; \
+			goto *_snow_after_each; \
+		} \
+		_snow_after_done: \
+		; \
 	} while (0)
 #define it test
 
@@ -557,6 +596,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_depth = _snow_parent_depth + 1; \
 		int _snow_successes = 0; \
 		int _snow_total = 0; \
+		int  __attribute__((unused)) _snow_runaround = 0; \
+		void __attribute__((unused)) *_snow_around_return = NULL; \
+		void __attribute__((unused)) *_snow_before_each = NULL; \
+		void __attribute__((unused)) *_snow_after_each = NULL; \
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
 		char *_snow_spaces = (char*)malloc(_snow_depth * 2 + 1); \
@@ -579,6 +622,10 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_depth = 0; \
 		int _snow_successes = 0; \
 		int _snow_total = 0; \
+		int  __attribute__((unused)) _snow_runaround = 0; \
+		void __attribute__((unused)) *_snow_around_return = NULL; \
+		void __attribute__((unused)) *_snow_before_each = NULL; \
+		void __attribute__((unused)) *_snow_after_each = NULL; \
 		const char *_snow_spaces = ""; \
 		_snow_print_run(); \
 		__VA_ARGS__ \
@@ -711,7 +758,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	void (**_snow_specific_tests)() = NULL; \
 	FILE *_snow_log_file; \
 	struct timeval _snow_timer; \
-	struct _snow_labels _snow_labels = { NULL, 0, 0 }; \
+	struct _snow_labels _snow_defer_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
 	struct _snow_option _snow_opts[] = { \
 		[_snow_opt_version] = { "version", 'v',  0, 0 }, \
@@ -782,7 +829,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			} \
 		} \
 		/* Cleanup, print result */ \
-		free(_snow_labels.labels); \
+		free(_snow_defer_labels.labels); \
 		free(_snow_describes.describes); \
 		if (_snow_specific_tests != NULL) \
 			free(_snow_specific_tests); \

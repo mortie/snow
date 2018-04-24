@@ -284,4 +284,22 @@ describe(tests, {
 #endif
 });
 
+describe(around, {
+	it("before_each and after_each should run before and after each test", {
+		assert(compareOutput("./cases/around a", "around-before-after"));
+	});
+
+	it("before_each and after_each should only run in the describe clause", {
+		assert(compareOutput("./cases/around d", "around-before-after-only-in-describe"));
+	});
+
+	it("before_each and after_each should only run in a subdesc clause", {
+		assert(compareOutput("./cases/around b", "around-before-after-only-in-subdesc"));
+	});
+
+	it("before_each should run in the describe clause and after_each should run in the subdesc clause", {
+		assert(compareOutput("./cases/around c", "around-before-in-describe-after-in-subdesc"));
+	});
+});
+
 snow_main();

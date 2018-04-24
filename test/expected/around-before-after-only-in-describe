@@ -1,0 +1,20 @@
+
+Testing d:
+D BEFORE
+✓ Success: success: 1.00s
+D AFTER
+D BEFORE
+✕ Failed:  failure:
+    Assertion failed: 0
+    in cases/around.c:d
+D AFTER
+
+  Testing dd:
+  ✓ Success: success: 1.00s
+  ✕ Failed:  failure:
+      Assertion failed: 0
+      in cases/around.c:dd
+  dd: Passed 1/2 tests.
+
+d: Passed 2/4 tests.
+
