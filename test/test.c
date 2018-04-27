@@ -301,13 +301,9 @@ describe(around, {
 		assert(compareOutput("./cases/around c", "around-after-complements-subdesc"));
 	});
 
-
-
 	it("before_each and after_each in subdesc should shadow the parent", {
 		assert(compareOutput("./cases/around e", "around-subdesc-before-after-shadow"));
 	});
-
-
 });
 
 snow_main();
