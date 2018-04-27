@@ -68,9 +68,11 @@ describe(vector, {
 		asserteq(vec.size, 0);
 	});
 
-	it("allocates vectors based on elem_size", {
+	before_each({
 		vector_init(&vec, sizeof(int));
+	});
 
+	it("allocates vectors based on elem_size", {
 		vector_alloc(&vec, 10);
 		asserteq(vec.elem_size, sizeof(int));
 		asserteq(vec.count, 0);
@@ -81,14 +83,6 @@ describe(vector, {
 	});
 
 	subdesc(vector_set, {
-		before_each({
-			vector_init(&vec, sizeof(int));
-		});
-
-		after_each({
-			vector_free(&vec);
-		});
-
 		it("sets values inside of the allocated range", {
 			vector_alloc(&vec, 2);
 			int el = 10;
@@ -104,14 +98,6 @@ describe(vector, {
 	});
 
 	subdesc(vector_get, {
-		before_each({
-			vector_init(&vec, sizeof(int));
-		});
-
-		after_each({
-			vector_free(&vec);
-		});
-
 		it("gets values inside the allocated range", {
 			int el = 500;
 			vector_set(&vec, 10, &el);

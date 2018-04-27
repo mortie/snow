@@ -136,11 +136,11 @@ only deferred expressions defined before the point of failure will be executed.
 
 ### before_each(block)
 
-Code to run before each test case in the current description/subdesc-block.
+Code to run before each test case.
 
 ### after_each(block)
 
-Code to run after each test case in the current description/subdesc-block.
+Code to run after each test case.
 
 ### snow\_main()
 
