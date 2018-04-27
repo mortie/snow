@@ -8,8 +8,10 @@ C BEFORE
     in cases/around.c:c
 
   Testing cc:
+C BEFORE
   ✓ Success: success: 1.00s
 CC AFTER
+C BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0
       in cases/around.c:cc

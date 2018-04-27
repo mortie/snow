@@ -65,5 +65,24 @@ describe(d, {
 	});
 });
 
-
+describe(e, {
+	before_each({
+		puts("E BEFORE");
+	});
+	after_each({
+		puts("E AFTER");
+	});
+	test("success", { assert(1); });
+	test("failure", { assert(0); });
+	subdesc(ee, {
+		before_each({
+			puts("EE BEFORE");
+		});
+		after_each({
+			puts("EE AFTER");
+		});
+		test("success", { assert(1); });
+		test("failure", { assert(0); });
+	});
+});
 snow_main();

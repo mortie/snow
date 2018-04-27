@@ -533,7 +533,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_runaround = 0; \
 			goto *_snow_around_return; \
 		} else { \
-			_snow_before_each = &&_snow_around_label; \
+			_snow_before_labels.labels[_snow_before_labels.count - 1] = &&_snow_around_label; \
 		} \
 	} while (0)
 
@@ -546,7 +546,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_runaround = 0; \
 			goto *_snow_around_return; \
 		} else { \
-			_snow_after_each = &&_snow_around_label; \
+			_snow_after_labels.labels[_snow_after_labels.count - 1] = &&_snow_around_label; \
 		} \
 	} while (0)
 
@@ -559,10 +559,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
-		if (_snow_before_each != NULL) { \
-			_snow_runaround = 1; \
-			_snow_around_return = &&_snow_begin_done; \
-			goto *_snow_before_each; \
+		for (int i = _snow_before_labels.count; i >= 0; --i) { \
+			if (_snow_before_labels.labels[i] != NULL) { \
+				_snow_runaround = 1; \
+				_snow_around_return = &&_snow_begin_done; \
+				goto *_snow_before_labels.labels[i]; \
+			} \
 		} \
 		_snow_begin_done: \
 		_snow_print_maybe(); \
@@ -577,10 +579,12 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_defer_labels.count -= 1; \
 			goto *_snow_defer_labels.labels[_snow_defer_labels.count]; \
 		} \
-		if (_snow_after_each != NULL) { \
-			_snow_runaround = 1; \
-			_snow_around_return = &&_snow_after_done; \
-			goto *_snow_after_each; \
+		for (int i = _snow_after_labels.count; i >= 0; --i) { \
+			if (_snow_after_labels.labels[i] != NULL) { \
+				_snow_runaround = 1; \
+				_snow_around_return = &&_snow_after_done; \
+				goto *_snow_after_labels.labels[i]; \
+			} \
 		} \
 		_snow_after_done: \
 		; \
@@ -596,10 +600,16 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_depth = _snow_parent_depth + 1; \
 		int _snow_successes = 0; \
 		int _snow_total = 0; \
-		int  __attribute__((unused)) _snow_runaround = 0; \
-		void __attribute__((unused)) *_snow_around_return = NULL; \
-		void __attribute__((unused)) *_snow_before_each = NULL; \
-		void __attribute__((unused)) *_snow_after_each = NULL; \
+		_snow_array_append( \
+				_snow_before_labels.labels, \
+				_snow_before_labels.count, \
+				_snow_before_labels.size, \
+				NULL); \
+		_snow_array_append( \
+				_snow_after_labels.labels, \
+				_snow_after_labels.count, \
+				_snow_after_labels.size, \
+				NULL); \
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
 		char *_snow_spaces = (char*)malloc(_snow_depth * 2 + 1); \
@@ -611,6 +621,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		__VA_ARGS__ \
 		_snow_print_done(); \
 		free(_snow_spaces); \
+		_snow_before_labels.count--; \
+		_snow_after_labels.count--; \
 		*_snow_parent_successes += _snow_successes; \
 		*_snow_parent_total += _snow_total; \
 	} while (0)
@@ -624,12 +636,26 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int _snow_total = 0; \
 		int  __attribute__((unused)) _snow_runaround = 0; \
 		void __attribute__((unused)) *_snow_around_return = NULL; \
-		void __attribute__((unused)) *_snow_before_each = NULL; \
-		void __attribute__((unused)) *_snow_after_each = NULL; \
+		struct _snow_labels _snow_before_labels = {NULL, 0, 0}; \
+		struct _snow_labels _snow_after_labels = {NULL, 0, 0}; \
+		_snow_array_append( \
+				_snow_before_labels.labels, \
+				_snow_before_labels.count, \
+				_snow_before_labels.size, \
+				NULL); \
+		_snow_array_append( \
+				_snow_after_labels.labels, \
+				_snow_after_labels.count, \
+				_snow_after_labels.size, \
+				NULL); \
 		const char *_snow_spaces = ""; \
 		_snow_print_run(); \
 		__VA_ARGS__ \
 		_snow_print_done(); \
+		if (_snow_before_labels.labels != NULL) \
+			free(_snow_before_labels.labels); \
+		if (_snow_after_labels.labels != NULL) \
+		free(_snow_after_labels.labels); \
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
 	} \
