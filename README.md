@@ -134,6 +134,14 @@ reverse order of their definitions (i.e `defer(printf("World"));
 defer(printf("Hello "));` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
+### before_each(block)
+
+Code to run before each test case.
+
+### after_each(block)
+
+Code to run after each test case.
+
 ### snow\_main()
 
 This macro expands to a main function which handless stuff like parsing

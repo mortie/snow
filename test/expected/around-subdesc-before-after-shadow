@@ -1,0 +1,24 @@
+
+Testing e:
+E BEFORE
+✓ Success: success: 1.00s
+E AFTER
+E BEFORE
+✕ Failed:  failure:
+    Assertion failed: 0
+    in cases/around.c:e
+E AFTER
+
+  Testing ee:
+EE BEFORE
+  ✓ Success: success: 1.00s
+EE AFTER
+EE BEFORE
+  ✕ Failed:  failure:
+      Assertion failed: 0
+      in cases/around.c:ee
+EE AFTER
+  ee: Passed 1/2 tests.
+
+e: Passed 2/4 tests.
+
