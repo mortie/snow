@@ -559,7 +559,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
 		_snow_total += 1; \
-		for (int i = _snow_before_labels.count; i >= 0; --i) { \
+		for (int i = _snow_before_labels.count - 1; i >= 0; --i) { \
 			if (_snow_before_labels.labels[i] != NULL) { \
 				_snow_runaround = 1; \
 				_snow_around_return = &&_snow_begin_done; \
@@ -579,7 +579,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 			_snow_defer_labels.count -= 1; \
 			goto *_snow_defer_labels.labels[_snow_defer_labels.count]; \
 		} \
-		for (int i = _snow_after_labels.count; i >= 0; --i) { \
+		for (int i = _snow_after_labels.count - 1; i >= 0; --i) { \
 			if (_snow_after_labels.labels[i] != NULL) { \
 				_snow_runaround = 1; \
 				_snow_around_return = &&_snow_after_done; \
