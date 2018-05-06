@@ -601,15 +601,15 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		int _snow_successes = 0; \
 		int _snow_total = 0; \
 		_snow_array_append( \
-				_snow_before_labels.labels, \
-				_snow_before_labels.count, \
-				_snow_before_labels.size, \
-				NULL); \
+			_snow_before_labels.labels, \
+			_snow_before_labels.count, \
+			_snow_before_labels.size, \
+			NULL); \
 		_snow_array_append( \
-				_snow_after_labels.labels, \
-				_snow_after_labels.count, \
-				_snow_after_labels.size, \
-				NULL); \
+			_snow_after_labels.labels, \
+			_snow_after_labels.count, \
+			_snow_after_labels.size, \
+			NULL); \
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
 		char *_snow_spaces = (char*)malloc(_snow_depth * 2 + 1); \
