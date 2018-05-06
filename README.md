@@ -58,7 +58,7 @@ subdescription for testing fread-related stuff.
 	* `-DSNOW_ENABLED`: Enable snow (otherwise `describe(...)` would be
 	  compiled down to nothing).
 	* `-g`: Add debug symbols for valgrind.
-* Run: `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./test`
+* Run: `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1 ./test`
 
 ``` C
 #include <stdio.h>

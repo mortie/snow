@@ -3,7 +3,9 @@ CASES = $(patsubst %.c,%,$(CASESRC))
 
 CFLAGS ?= -g -Wall -Wextra
 FLAGS = $(CFLAGS) -DSNOW_ENABLED
-VGFLAGS ?= --quiet --leak-check=full --show-leak-kinds=all --track-origins=yes
+VGFLAGS ?= \
+	--quiet --leak-check=full --show-leak-kinds=all \
+	--track-origins=yes --error-exitcode=1
 
 test-snow: test.c $(CASES) snow/snow.h
 	$(CC) -I. $(FLAGS)  -o $@ $<

@@ -6,7 +6,9 @@ include_directories("..")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
 set(SOURCES src/main.c src/vector.c src/vector.h)
-set(VGFLAGS --quiet --leak-check=full --show-leak-kinds=all --track-origins=yes)
+set(VGFLAGS
+	--quiet --leak-check=full --show-leak-kinds=all
+	--track-origins=yes --error-exitcode=1)
 
 add_executable(exampleproject ${SOURCES})
 

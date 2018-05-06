@@ -6,7 +6,9 @@ OBJ-TEST = $(patsubst src/%.c,obj-test/%.o,$(SRC))
 HDR = src/vector.h ../snow/snow.h
 
 CFLAGS ?= -Wall -Wextra -Wno-unused-parameter
-VGFLAGS ?= --quiet --leak-check=full --show-leak-kinds=all --track-origins=yes
+VGFLAGS ?= \
+	--quiet --leak-check=full --show-leak-kinds=all \
+	--track-origins=yes --error-exitcode=1
 
 INCLUDE = -I..
 
