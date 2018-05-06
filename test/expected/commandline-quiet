@@ -1,4 +1,4 @@
 ✕ Failed:  failure:
     Assertion failed: 0
     in cases/commandline.c:test
-Total: Passed 1/2 tests.
+Total: Passed 1/2 tests. (1.00s)

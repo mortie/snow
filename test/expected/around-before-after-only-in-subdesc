@@ -1,20 +1,20 @@
 
 Testing b:
-✓ Success: success: 1.00s
+✓ Success: success (1.00s)
 ✕ Failed:  failure:
     Assertion failed: 0
     in cases/around.c:b
 
   Testing bb:
 BB BEFORE
-  ✓ Success: success: 1.00s
+  ✓ Success: success (1.00s)
 BB AFTER
 BB BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0
       in cases/around.c:bb
 BB AFTER
-  bb: Passed 1/2 tests.
+  bb: Passed 1/2 tests. (1.00s)
 
-b: Passed 2/4 tests.
+b: Passed 2/4 tests. (2.00s)
 

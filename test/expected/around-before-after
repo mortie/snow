@@ -1,12 +1,12 @@
 
 Testing a:
 A BEFORE
-✓ Success: success: 1.00s
+✓ Success: success (1.00s)
 A AFTER
 A BEFORE
 ✕ Failed:  failure:
     Assertion failed: 0
     in cases/around.c:a
 A AFTER
-a: Passed 1/2 tests.
+a: Passed 1/2 tests. (1.00s)
 

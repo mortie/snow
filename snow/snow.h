@@ -100,6 +100,7 @@ extern int _snow_extra_newline;
 extern int _snow_global_total;
 extern int _snow_global_successes;
 extern int _snow_num_defines;
+extern double _snow_time_total;
 
 struct _snow_labels {
 	void **labels;
@@ -141,7 +142,7 @@ struct _snow_option
 };
 extern struct _snow_option _snow_opts[];
 
-extern struct timeval _snow_timer;
+#define _snow_time2ms(t) ((t).tv_sec * 1000.0 + (t).tv_usec / 1000.0)
 
 #define _snow_print(...) \
 	do { \
@@ -149,23 +150,21 @@ extern struct timeval _snow_timer;
 		fflush(_snow_log_file); \
 	} while (0)
 
-#define _snow_print_timer() \
+#define _snow_print_timer(timediff) \
 	do { \
 		if (_snow_opts[_snow_opt_timer].value) { \
-			struct timeval now; \
-			gettimeofday(&now, NULL); \
-			double before_ms = _snow_timer.tv_sec * 1000.0 + _snow_timer.tv_usec / 1000.0; \
-			double now_ms = now.tv_sec * 1000.0 + now.tv_usec / 1000.0; \
-			double ms = now_ms - before_ms; \
-			if (ms < 1000) \
-				_snow_print(": %.2fms\n", ms); \
+			if ((timediff) < 1000) \
+				_snow_print(" (%.2fms)\n", (timediff)); \
 			else \
-				_snow_print(": %.2fs\n", ms / 1000); \
-		} \
-		else \
+				_snow_print(" (%.2fs)\n", (timediff) / 1000); \
+		} else if (_snow_opts[_snow_opt_maybes].value) { \
+			/* We need a space if we have maybes, to remove */ \
+			/* the colon it adds to make noisy tests look good */ \
+			_snow_print(" \n"); \
+		} else { \
 			_snow_print("\n"); \
-	} \
-	while (0)
+		} \
+	} while (0)
 
 #define _snow_print_result_newline() \
 	do { \
@@ -432,7 +431,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #endif
 
-#define _snow_print_success() \
+#define _snow_print_success(timediff) \
 	do { \
 		_snow_print_result_newline(); \
 		if (_snow_opts[_snow_opt_quiet].value) break; \
@@ -449,7 +448,7 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 				"%s✓ Success: %s", \
 				_snow_spaces, _snow_desc); \
 		} \
-		_snow_print_timer(); \
+		_snow_print_timer(timediff); \
 	} while (0)
 
 #define _snow_print_maybe() \
@@ -495,12 +494,16 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (_snow_opts[_snow_opt_color].value) { \
 			_snow_print( \
 				_SNOW_COLOR_BOLD "%s%s: Passed %i/%i tests." \
-				_SNOW_COLOR_RESET "\n\n", \
+				_SNOW_COLOR_RESET, \
 				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
+			_snow_print_timer(_snow_time_total); \
+			_snow_print("\n"); \
 		} else { \
 			_snow_print( \
-				"%s%s: Passed %i/%i tests.\n\n", \
+				"%s%s: Passed %i/%i tests.", \
 				_snow_spaces, _snow_name, _snow_successes, _snow_total); \
+			_snow_print_timer(_snow_time_total); \
+			_snow_print("\n"); \
 		} \
 	} while (0)
 
@@ -558,6 +561,8 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		__attribute__((unused)) void *_snow_unused_label = &&_snow_done; \
 		int __attribute__((unused)) _snow_rundefer = 0; \
 		const char *_snow_desc = testdesc; \
+		struct timeval _snow_timer_pre, _snow_timer_post; \
+		double timediff = 0; \
 		_snow_total += 1; \
 		for (int i = _snow_before_labels.count - 1; i >= 0; --i) { \
 			if (_snow_before_labels.labels[i] != NULL) { \
@@ -568,10 +573,18 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		} \
 		_snow_begin_done: \
 		_snow_print_maybe(); \
-		gettimeofday(&_snow_timer, NULL); \
+		if (_snow_opts[_snow_opt_timer].value) \
+			gettimeofday(&_snow_timer_pre, NULL); \
 		__VA_ARGS__ \
+		if (_snow_opts[_snow_opt_timer].value) { \
+			gettimeofday(&_snow_timer_post, NULL); \
+			double pre_ms = _snow_time2ms(_snow_timer_pre); \
+			double post_ms = _snow_time2ms(_snow_timer_post); \
+			timediff = post_ms - pre_ms; \
+			_snow_time_total += timediff; \
+		} \
 		_snow_successes += 1; \
-		_snow_print_success(); \
+		_snow_print_success(timediff); \
 		_snow_done: \
 		__attribute__((unused)); \
 		_snow_rundefer = 1; \
@@ -591,25 +604,33 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	} while (0)
 #define it test
 
+#define _snow_desc(...) \
+	int _snow_successes = 0; \
+	int _snow_total = 0; \
+	double *_snow_parent_time_total = &_snow_time_total; \
+	double _snow_time_total = 0; \
+	_snow_array_append( \
+		_snow_before_labels.labels, \
+		_snow_before_labels.count, \
+		_snow_before_labels.size, \
+		NULL); \
+	_snow_array_append( \
+		_snow_after_labels.labels, \
+		_snow_after_labels.count, \
+		_snow_after_labels.size, \
+		NULL); \
+	_snow_print_run(); \
+	__VA_ARGS__ \
+	_snow_print_done(); \
+	*_snow_parent_time_total += _snow_time_total
+
 #define subdesc(testname, ...) \
 	do { \
+		char *_snow_name = #testname; \
 		int *_snow_parent_total = &_snow_total; \
 		int *_snow_parent_successes = &_snow_successes; \
 		int _snow_parent_depth = _snow_depth; \
-		char *_snow_name = #testname; \
 		int __attribute__((unused)) _snow_depth = _snow_parent_depth + 1; \
-		int _snow_successes = 0; \
-		int _snow_total = 0; \
-		_snow_array_append( \
-			_snow_before_labels.labels, \
-			_snow_before_labels.count, \
-			_snow_before_labels.size, \
-			NULL); \
-		_snow_array_append( \
-			_snow_after_labels.labels, \
-			_snow_after_labels.count, \
-			_snow_after_labels.size, \
-			NULL); \
 		/* Malloc because Clang doesn't like using a variable length
 		 * stack allocated array here, because dynamic gotos */ \
 		char *_snow_spaces = (char*)malloc(_snow_depth * 2 + 1); \
@@ -617,9 +638,9 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		for (i = 0; i < _snow_depth * 2; ++i) \
 			_snow_spaces[i] = ' '; \
 		_snow_spaces[_snow_depth * 2] = '\0'; \
-		_snow_print_run(); \
-		__VA_ARGS__ \
-		_snow_print_done(); \
+		\
+		_snow_desc(__VA_ARGS__); \
+		\
 		free(_snow_spaces); \
 		_snow_before_labels.count--; \
 		_snow_after_labels.count--; \
@@ -632,30 +653,18 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		_snow_num_defines += 1; \
 		const char *_snow_name = #testname; \
 		int __attribute__((unused)) _snow_depth = 0; \
-		int _snow_successes = 0; \
-		int _snow_total = 0; \
 		int  __attribute__((unused)) _snow_runaround = 0; \
 		void __attribute__((unused)) *_snow_around_return = NULL; \
 		struct _snow_labels _snow_before_labels = {NULL, 0, 0}; \
 		struct _snow_labels _snow_after_labels = {NULL, 0, 0}; \
-		_snow_array_append( \
-				_snow_before_labels.labels, \
-				_snow_before_labels.count, \
-				_snow_before_labels.size, \
-				NULL); \
-		_snow_array_append( \
-				_snow_after_labels.labels, \
-				_snow_after_labels.count, \
-				_snow_after_labels.size, \
-				NULL); \
 		const char *_snow_spaces = ""; \
-		_snow_print_run(); \
-		__VA_ARGS__ \
-		_snow_print_done(); \
+		\
+		_snow_desc(__VA_ARGS__); \
+		\
 		if (_snow_before_labels.labels != NULL) \
 			free(_snow_before_labels.labels); \
 		if (_snow_after_labels.labels != NULL) \
-		free(_snow_after_labels.labels); \
+			free(_snow_after_labels.labels); \
 		_snow_global_successes += _snow_successes; \
 		_snow_global_total += _snow_total; \
 	} \
@@ -779,11 +788,11 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 	int _snow_global_total = 0; \
 	int _snow_global_successes = 0; \
 	int _snow_num_defines = 0; \
+	double _snow_time_total = 0; \
 	int _snow_specific_tests_count = 0; \
 	int _snow_specific_tests_size = 0; \
 	void (**_snow_specific_tests)() = NULL; \
 	FILE *_snow_log_file; \
-	struct timeval _snow_timer; \
 	struct _snow_labels _snow_defer_labels = { NULL, 0, 0 }; \
 	struct _snow_describes _snow_describes = { NULL, 0, 0 }; \
 	struct _snow_option _snow_opts[] = { \
@@ -862,14 +871,15 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 		if (_snow_num_defines > 1 || _snow_opts[_snow_opt_quiet].value) { \
 			if (_snow_opts[_snow_opt_color].value) { \
 				_snow_print( \
-					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests.\n" \
+					_SNOW_COLOR_BOLD "Total: Passed %i/%i tests." \
 					_SNOW_COLOR_RESET, \
 					_snow_global_successes, _snow_global_total); \
 			} else { \
 				_snow_print( \
-					"Total: Passed %i/%i tests.\n", \
+					"Total: Passed %i/%i tests.", \
 					_snow_global_successes, _snow_global_total); \
 			} \
+			_snow_print_timer(_snow_time_total); \
 			if (!_snow_opts[_snow_opt_quiet].value) \
 				_snow_print("\n"); \
 		} \

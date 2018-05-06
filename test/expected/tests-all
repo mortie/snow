@@ -1,29 +1,29 @@
 
 Testing a:
-✓ Success: success: 1.00s
+✓ Success: success (1.00s)
 ✕ Failed:  failure:
     Assertion failed: 0
     in cases/tests.c:a
-a: Passed 1/2 tests.
+a: Passed 1/2 tests. (1.00s)
 
 Testing b:
-✓ Success: success: 1.00s
+✓ Success: success (1.00s)
 ✕ Failed:  failure:
     Assertion failed: 0
     in cases/tests.c:b
-b: Passed 1/2 tests.
+b: Passed 1/2 tests. (1.00s)
 
 Testing c:
-✓ Success: success: 1.00s
-✓ Success: success: 1.00s
-c: Passed 2/2 tests.
+✓ Success: success (1.00s)
+✓ Success: success (1.00s)
+c: Passed 2/2 tests. (2.00s)
 
 Testing d:
 ✕ Failed:  failure:
     Assertion failed: 0
     in cases/tests.c:d
-✓ Success: success: 1.00s
-d: Passed 1/2 tests.
+✓ Success: success (1.00s)
+d: Passed 1/2 tests. (1.00s)
 
-Total: Passed 5/8 tests.
+Total: Passed 5/8 tests. (5.00s)
 

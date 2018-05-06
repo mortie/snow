@@ -1,7 +1,7 @@
 
 Testing e:
 E BEFORE
-✓ Success: success: 1.00s
+✓ Success: success (1.00s)
 E AFTER
 E BEFORE
 ✕ Failed:  failure:
@@ -11,14 +11,14 @@ E AFTER
 
   Testing ee:
 EE BEFORE
-  ✓ Success: success: 1.00s
+  ✓ Success: success (1.00s)
 EE AFTER
 EE BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0
       in cases/around.c:ee
 EE AFTER
-  ee: Passed 1/2 tests.
+  ee: Passed 1/2 tests. (1.00s)
 
-e: Passed 2/4 tests.
+e: Passed 2/4 tests. (2.00s)
 
