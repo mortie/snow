@@ -69,6 +69,7 @@
 
 // Compatibility with MinGW
 #ifdef __MINGW32__
+#  pragma GCC diagnostic ignored "-Wint-conversion"
 #  include <io.h>
 #  ifdef __WIN64
 #    define _SNOW_PRIuSIZE PRIu64
