@@ -35,7 +35,8 @@ void vector_set(vector *vec, size_t idx, void *elem)
 		vector_alloc(vec, vec->count);
 	}
 
-	memcpy(vec->elems + (vec->elem_size * idx), elem, vec->elem_size);
+	void *ptr = (void *)((char *)vec->elems + (vec->elem_size * idx));
+	memcpy(ptr, elem, vec->elem_size);
 }
 
 void *vector_get(vector *vec, size_t idx)
@@ -43,7 +44,8 @@ void *vector_get(vector *vec, size_t idx)
 	if (vec->count <= idx)
 		return NULL;
 
-	return vec->elems + (vec->elem_size * idx);
+	void *ptr = (void *)((char *)vec->elems + (vec->elem_size * idx));
+	return ptr;
 }
 
 #include <snow/snow.h>
@@ -87,13 +89,13 @@ describe(vector, {
 			vector_alloc(&vec, 2);
 			int el = 10;
 			vector_set(&vec, 1, &el);
-			asserteq(*(int *)(vec.elems + sizeof(int)), 10);
+			asserteq(*(int *)((char *)vec.elems + sizeof(int)), 10);
 		});
 
 		it("allocates space when setting values outside the allocated range", {
 			int el = 10;
 			vector_set(&vec, 50, &el);
-			asserteq(*(int *)(vec.elems + (sizeof(int) * 50)), 10);
+			asserteq(*(int *)((char *)vec.elems + (sizeof(int) * 50)), 10);
 		});
 	});
 

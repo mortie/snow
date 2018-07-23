@@ -223,3 +223,17 @@ avoid name conflicts.
 
 The [exampleproject](https://github.com/mortie/snow/blob/master/exampleproject)
 directory is an example of a program tested this way.
+
+## Defines
+
+* **SNOW\_ENABLED**: Enable Snow. If this macro isn't defined, `describe(...)`
+  will be defined as an empty macro and nothing else will be defined.
+* **SNOW\_KEEP\_WARNINGS**: By default, the warnings -Wpedantic,
+  -Wpointer-arith, and -Wint-conversion will be ignored after the inclusion
+  of `snow.h`. By defining this macro, no warnings will be disabled.
+* Colors
+	* **SNOW\_COLOR\_SUCCESS**: The color for "✓ Success".
+	* **SNOW\_COLOR\_FAIL**: The color for "✕ Failed".
+	* **SNOW\_COLOR\_DESC**: The color for test descriptions.
+	* **SNOW\_COLOR\_MAYBE**: The color for "? Testing" (the temporary lines
+	  printed before a test case has succeeded or failed).

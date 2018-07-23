@@ -121,6 +121,12 @@ static int compareOutput(char *cmd, char *expected)
 #define NEQ_FAILURE 3
 #define TEST_WORKED 4
 
+#ifndef __MINGW32__
+#define NO_MINGW(...)
+#else
+#define NO_MINGW(...) __VA_ARGS__
+#endif
+
 #include <snow/snow.h>
 
 describe(asserts, {
@@ -218,12 +224,10 @@ describe(commandline, {
 // When running with git bash, argv[0] will be an absolute path, so
 // this test case would fail, because it assumes the -h option prints
 // the actual path used to run the binary.
-#ifndef __MINGW32__
-	it("prints usage with -h and --help", {
+	NO_MINGW(it("prints usage with -h and --help", {
 		assert(compareOutput("./cases/commandline --help", "commandline-help"));
 		assert(compareOutput("./cases/commandline -h", "commandline-help"));
-	});
-#endif
+	}));
 
 	it("prints version with -v and --version", {
 		assert(compareOutput("./cases/commandline --version", "commandline-version"));
@@ -275,13 +279,11 @@ describe(tests, {
 		assert(compareOutput("./cases/tests a", "tests-single"));
 	});
 
-#ifndef __MINGW32__
-	it("fails when asked to run a non-existant test suite", {
+	NO_MINGW(it("fails when asked to run a non-existant test suite", {
 		asserteq(
 			WEXITSTATUS(system("./cases/tests a b doesnt-exist 2>/dev/null")),
 			EXIT_FAILURE);
-	});
-#endif
+	}));
 });
 
 describe(around, {

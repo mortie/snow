@@ -36,6 +36,15 @@
 #error "Your compiler doesn't support GNU extensions."
 #endif
 
+#ifndef SNOW_KEEP_WARNINGS
+
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wpointer-arith"
+#pragma GCC diagnostic ignored "-Wint-conversion"
+
+#endif
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -69,7 +78,6 @@
 
 // Compatibility with MinGW
 #ifdef __MINGW32__
-#  pragma GCC diagnostic ignored "-Wint-conversion"
 #  include <io.h>
 #  ifdef __WIN64
 #    define _SNOW_PRIuSIZE PRIu64
@@ -386,9 +394,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 
 #define asserteq(a, b) \
 	do { \
-		_Pragma("GCC diagnostic push") \
-		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
-		_Pragma("GCC diagnostic ignored \"-Wint-conversion\"") \
 		int r = _Generic((b), \
 			char *: _snow_asserteq_str, \
 			const char *: _snow_asserteq_str, \
@@ -400,15 +405,11 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 					ptrdiff_t: _snow_asserteq_ptr, \
 					default: _snow_asserteq_int)) \
 		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
-		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
 #define assertneq(a, b) \
 	do { \
-		_Pragma("GCC diagnostic push") \
-		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
-		_Pragma("GCC diagnostic ignored \"-Wint-conversion\"") \
 		int r = _Generic((b), \
 			char *: _snow_assertneq_str, \
 			const char *: _snow_assertneq_str, \
@@ -420,7 +421,6 @@ static int __attribute__((unused)) _snow_assertneq_buf(
 					ptrdiff_t: _snow_assertneq_ptr, \
 					default: _snow_assertneq_int)) \
 		)(_snow_desc, _snow_spaces, _snow_name, __FILE__, #a, #b, a, b); \
-		_Pragma("GCC diagnostic pop") \
 		if (r < 0) \
 			goto _snow_done; \
 	} while (0)
