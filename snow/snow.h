@@ -606,6 +606,7 @@ int _snow_main(int argc, char **argv) {
 		return EXIT_SUCCESS;
 	} else if (_snow_opts[_SNOW_OPT_VERSION].boolval) {
 		_snow_print("Snow %s\n", SNOW_VERSION);
+		return EXIT_SUCCESS;
 	}
 
 	// Set defaults when log is not a TTY
