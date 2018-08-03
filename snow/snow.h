@@ -16,6 +16,7 @@
 #include <setjmp.h>
 #include <unistd.h>
 #include <fnmatch.h>
+#include <sys/time.h>
 
 #define SNOW_VERSION "X"
 
@@ -84,6 +85,7 @@ struct _snow_context {
 	int done;
 	int in_case;
 	int printed_testing;
+	double start_time;
 	int enabled;
 };
 
@@ -127,6 +129,7 @@ enum {
 
 extern struct _snow_arr _snow_descs;
 extern jmp_buf _snow_case_start;
+extern double _snow_case_start_time;
 extern struct _snow_arr _snow_defers;
 extern struct _snow_arr _snow_desc_patterns;
 extern FILE *_snow_log_file;
@@ -190,6 +193,16 @@ int _snow_desc_filter(struct _snow_context *context, char *name) {
 }
 
 /*
+ * Get current time as a double
+ */
+
+double _snow_now() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0;
+}
+
+/*
  * Spaces
  */
 
@@ -231,6 +244,14 @@ static int _snow_need_cr = 0;
 #define _SNOW_NL_RES 3
 static int _snow_nl = 0;
 
+#define _snow_print_timer(start_time) \
+	double msec = _snow_now() - (start_time); \
+	if (msec < 1000) { \
+		_snow_print("(%.02fms)", msec); \
+	} else { \
+		_snow_print("(%.02fs)", msec / 1000); \
+	} \
+
 #define _snow_print_testing(context, name) \
 	if (!_snow_opts[_SNOW_OPT_QUIET].boolval) { \
 		(context)->printed_testing = 1; \
@@ -265,14 +286,19 @@ void _snow_print_testing_parents(struct _snow_context *context) {
 		_snow_nl = _SNOW_NL_RES; \
 		if (_snow_opts[_SNOW_OPT_COLOR].boolval) { \
 			_snow_printd(context, -1, \
-				_SNOW_COLOR_BOLD "%s: Passed %i/%i tests.\n" \
+				_SNOW_COLOR_BOLD "%s: Passed %i/%i tests." \
 				_SNOW_COLOR_RESET, \
 				name, passed, total); \
 		} else { \
 			_snow_printd(context, -1, \
-				"%s: Passed %i/%i tests.\n", \
+				"%s: Passed %i/%i tests.", \
 				name, passed, total); \
 		} \
+		if (_snow_opts[_SNOW_OPT_TIMER].boolval) { \
+			_snow_print(" "); \
+			_snow_print_timer((context)->start_time); \
+		} \
+		_snow_print("\n"); \
 	}
 
 #define _snow_print_maybe(context, name) \
@@ -302,13 +328,17 @@ void _snow_print_testing_parents(struct _snow_context *context) {
 			_snow_printd(context, -1, \
 				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ " \
 				_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
-				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s \n" \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s " \
 				_SNOW_COLOR_RESET, \
 				name); \
 		} else { \
 			_snow_printd(context, -1, \
-				"✓ Success: %s \n", name); \
+				"✓ Success: %s ", name); \
 		} \
+		if (_snow_opts[_SNOW_OPT_TIMER].boolval) { \
+			_snow_print_timer(_snow_case_start_time); \
+		} \
+		_snow_print("\n"); \
 	}
 
 #define _snow_print_failure(context, name) \
@@ -368,6 +398,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 				.num_success = 0, \
 				.done = 0, \
 				.printed_testing = 0, \
+				.start_time = _snow_now(), \
 				.enabled = \
 					_snow_context->enabled || \
 					_snow_desc_filter(_snow_context, #descname), \
@@ -392,6 +423,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 			} else { /* There are defers to run */ \
 			} \
 		} else { \
+			_snow_case_start_time = _snow_now(); \
 			if (!_snow_context->printed_testing) { \
 				_snow_print_testing_parents(_snow_context); \
 			} \
@@ -772,6 +804,8 @@ int _snow_main(int argc, char **argv) {
 	}
 
 	struct _snow_context root_context = { 0 };
+	root_context.start_time = _snow_now();
+	root_context.enabled = 1;
 	root_context.printed_testing = 1;
 	root_context.name = "Total";
 
@@ -782,6 +816,7 @@ int _snow_main(int argc, char **argv) {
 		struct _snow_desc *desc = _snow_arr_get(&_snow_descs, i);
 
 		context.name = "";
+		context.start_time = _snow_now();
 		context.enabled = _snow_desc_filter(&context, desc->name);
 		context.printed_testing = 0;
 		context.name = desc->name;
@@ -819,6 +854,7 @@ int _snow_main(int argc, char **argv) {
 #define snow_main() \
 	struct _snow_arr _snow_descs = { sizeof(struct _snow_desc), NULL, 0, 0 }; \
 	jmp_buf _snow_case_start; \
+	double _snow_case_start_time; \
 	struct _snow_arr _snow_defers = { sizeof(jmp_buf), NULL, 0, 0 }; \
 	struct _snow_arr _snow_desc_patterns = { sizeof(char *), NULL, 0, 0 }; \
 	FILE *_snow_log_file = NULL; \
