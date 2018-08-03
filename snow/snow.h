@@ -15,7 +15,7 @@
 #include <inttypes.h>
 #include <setjmp.h>
 #include <unistd.h>
-#include <getopt.h>
+#include <fnmatch.h>
 
 #define SNOW_VERSION "X"
 
@@ -83,6 +83,7 @@ struct _snow_context {
 	int num_success;
 	int done;
 	int in_case;
+	int enabled;
 };
 
 struct _snow_case_context {
@@ -132,6 +133,59 @@ extern struct _snow_opt _snow_opts[];
 
 #define _snow_opt_default(opt, val) \
 	if (!_snow_opts[opt].is_overwritten) _snow_opts[opt].boolval = val
+
+/*
+ * Filter descs
+ */
+
+static char *_snow_desc_filter_str = NULL;
+static size_t _snow_desc_filter_str_size = 0;
+size_t _snow_desc_filter_str_build(struct _snow_context *context) {
+	if (context == NULL) {
+		return 0;
+	}
+
+	size_t idx = _snow_desc_filter_str_build(context->parent);
+
+	size_t len = strlen(context->name);
+	if (_snow_desc_filter_str_size <= idx + len + 2) {
+		_snow_desc_filter_str_size = idx + len + 2;
+		_snow_desc_filter_str = realloc(
+			_snow_desc_filter_str, _snow_desc_filter_str_size);
+	}
+
+	if (idx != 0) {
+		_snow_desc_filter_str[idx++] = '.';
+	}
+	memcpy(_snow_desc_filter_str + idx, context->name, len);
+	_snow_desc_filter_str[idx + len] = '\0';
+
+	return idx + len;
+}
+int _snow_desc_filter(struct _snow_context *context, char *name) {
+	if (_snow_desc_patterns.length == 0)
+		return 1;
+
+	struct _snow_context tmp = { 0 };
+	tmp.parent = context;
+	tmp.name = name;
+	_snow_desc_filter_str_build(&tmp);
+
+	char *string = _snow_desc_filter_str;
+
+	for (size_t i = 0; i < _snow_desc_patterns.length; ++i) {
+		char *pattern = *(char **)_snow_arr_get(&_snow_desc_patterns, i);
+		int match = fnmatch(pattern, string, 0);
+		if (match == 0) {
+			return 1;
+		} else if (match != FNM_NOMATCH) {
+			fprintf(stderr, "Pattern error: %s\n", pattern);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	return 0;
+}
 
 /*
  * Spaces
@@ -218,6 +272,7 @@ static int _snow_nl = 0;
  * and create an __attribute__((constructor)) function
  * to add a function pointer to snow_test_##testname to a list.
  */
+
 #define describe(descname, ...) \
 	static void snow_test_##descname(struct _snow_context *_snow_context); \
 	__attribute__((constructor (__COUNTER__ + 101))) \
@@ -235,6 +290,7 @@ static int _snow_nl = 0;
  * This is a beautiful hack to use a for loop to run code _after_ the block
  * which appears after the macro.
  */
+
 int _snow_subdesc_after(struct _snow_context *context) {
 	context->done = 1;
 	context->parent->num_tests += context->num_tests;
@@ -243,6 +299,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 		context->num_tests, context->num_success);
 	return 0;
 }
+
 #define subdesc(descname, ...) \
 	_snow_print_testing(_snow_context, #descname); \
 	for ( \
@@ -253,15 +310,19 @@ int _snow_subdesc_after(struct _snow_context *context) {
 				.num_tests = 0, \
 				.num_success = 0, \
 				.done = 0, \
+				.enabled = \
+					_snow_context->enabled || \
+					_snow_desc_filter(_snow_context, #descname), \
 			}, \
 			*_snow_context = &_snow_ctx; \
 		_snow_context->done == 0; \
 		_snow_subdesc_after(_snow_context)) __VA_ARGS__
 
 #define it(casename, ...) \
-	_snow_context->num_tests += 1; \
-	_snow_context->in_case = 1; \
-	{ \
+	if (_snow_context->enabled) { \
+		_snow_context->num_tests += 1; \
+		_snow_context->in_case = 1; \
+		\
 		int jmpret = setjmp(_snow_case_start); \
 		if (jmpret != 0) { \
 			_snow_context->in_case = 0; \
@@ -279,13 +340,14 @@ int _snow_subdesc_after(struct _snow_context *context) {
 	for ( \
 		struct _snow_case_context _snow_case_ctx = { casename, __FILE__, __LINE__ }, \
 			__attribute__((unused)) *_snow_case_context = &_snow_case_ctx; \
-		_snow_context->in_case; \
+		_snow_context->in_case && _snow_context->enabled; \
 		longjmp(_snow_case_start, 1)) __VA_ARGS__
 #define test it
 
 /*
  * Fail a test.
  */
+
 #define fail(...) \
 	do { \
 		_snow_print_failure(_snow_context, _snow_case_context->name); \
@@ -308,6 +370,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 /*
  * Assert that an expression is true
  */
+
 #define assert(x, ...) \
 	do { \
 		char *expl = #__VA_ARGS__; \
@@ -319,6 +382,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 /*
  * Define assert functions
  */
+
 #define _snow_define_assertfunc(name, type, pattern) \
 	int _snow_assert_##name( \
 			struct _snow_context *_snow_context, struct _snow_case_context *_snow_case_context, \
@@ -392,6 +456,7 @@ int _snow_assert_fake() {
 /*
  * Explicit asserteq macros
  */
+
 #define asserteq_dbl(a, b, ...) \
 	_snow_assert_dbl(_snow_context, _snow_case_context, \
 	0, "" __VA_ARGS__, (a), #a, (b), #b)
@@ -414,6 +479,7 @@ int _snow_assert_fake() {
 /*
  * Explicit assertneq macros
  */
+
 #define assernteq_dbl(a, b, ...) \
 	_snow_assert_dbl(_snow_context, _snow_case_context, \
 	1, "" __VA_ARGS__, (a), #a, (b), #b)
@@ -436,6 +502,7 @@ int _snow_assert_fake() {
 /*
  * Automatic asserteq
  */
+
 #define asserteq(a, b, ...) \
 	do { \
 		char *explanation = "" __VA_ARGS__; \
@@ -460,6 +527,7 @@ int _snow_assert_fake() {
 /*
  * Automatic assertneq
  */
+
 #define assertneq(a, b, ...) \
 	do { \
 		char *explanation = "" __VA_ARGS__; \
@@ -486,6 +554,7 @@ int _snow_assert_fake() {
 /*
  * Print usage information
  */
+
 static void _snow_usage(char *argv0)
 {
 	_snow_print("Usage: %s [options]            Run all tests.\n", argv0);
@@ -526,6 +595,7 @@ static void _snow_usage(char *argv0)
 /*
  * Main function.
  */
+
 int _snow_main(int argc, char **argv) {
 
 	// Arg parsing
@@ -619,26 +689,26 @@ int _snow_main(int argc, char **argv) {
 
 	struct _snow_context root_context = { 0 };
 	root_context.name = "Total";
+
 	struct _snow_context context = { 0 };
-	context.parent = &root_context;
 	context.depth = 1;
 
 	for (size_t i = 0; i < _snow_descs.length; i += 1) {
 		struct _snow_desc *desc = _snow_arr_get(&_snow_descs, i);
 
+		context.name = "";
+		context.enabled = _snow_desc_filter(&context, desc->name);
 		context.name = desc->name;
 
 		_snow_print_testing(&root_context, context.name);
 		desc->func(&context);
 		_snow_print_result(&context,
-				context.name, context.num_success, context.num_tests);
+			context.name, context.num_success, context.num_tests);
 		root_context.num_tests += context.num_tests;
 		root_context.num_success += context.num_success;
 	}
-	if (_snow_descs.length > 1) {
-		_snow_print_result(&context, root_context.name,
-			root_context.num_success, root_context.num_tests);
-	}
+	_snow_print_result(&context, root_context.name,
+		root_context.num_success, root_context.num_tests);
 	_snow_print("\n");
 
 	return EXIT_SUCCESS;
@@ -648,6 +718,7 @@ int _snow_main(int argc, char **argv) {
  * Initialize the variables which other translation units will use as extern,
  * then just run _snow_main.
  */
+
 #define snow_main() \
 	struct _snow_arr _snow_descs = { sizeof(struct _snow_desc), NULL, 0, 0 }; \
 	jmp_buf _snow_case_start; \
