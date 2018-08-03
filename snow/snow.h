@@ -83,6 +83,7 @@ struct _snow_context {
 	int num_success;
 	int done;
 	int in_case;
+	int printed_testing;
 	int enabled;
 };
 
@@ -130,6 +131,9 @@ extern struct _snow_arr _snow_defers;
 extern struct _snow_arr _snow_desc_patterns;
 extern FILE *_snow_log_file;
 extern struct _snow_opt _snow_opts[];
+extern int _snow_exit_code;
+extern char *_snow_desc_filter_str;
+extern size_t _snow_desc_filter_str_size;
 
 #define _snow_opt_default(opt, val) \
 	if (!_snow_opts[opt].is_overwritten) _snow_opts[opt].boolval = val
@@ -138,8 +142,6 @@ extern struct _snow_opt _snow_opts[];
  * Filter descs
  */
 
-static char *_snow_desc_filter_str = NULL;
-static size_t _snow_desc_filter_str_size = 0;
 size_t _snow_desc_filter_str_build(struct _snow_context *context) {
 	if (context == NULL) {
 		return 0;
@@ -209,12 +211,18 @@ char *_snow_spaces(int depth) {
  * Print stuff
  */
 
+static int _snow_need_cr = 0;
+
 #define _snow_print(...) \
 	fprintf(_snow_log_file, __VA_ARGS__)
 
 #define _snow_printd(context, offs, ...) \
 	do { \
-		_snow_print("\r%s", _snow_spaces((context)->depth + (offs))); \
+		if (_snow_need_cr) { \
+			_snow_print("\r"); \
+			_snow_need_cr = 0; \
+		} \
+		_snow_print("%s", _snow_spaces((context)->depth + (offs))); \
 		_snow_print(__VA_ARGS__); \
 	} while (0)
 
@@ -224,48 +232,98 @@ char *_snow_spaces(int depth) {
 static int _snow_nl = 0;
 
 #define _snow_print_testing(context, name) \
-	_snow_print("\n"); \
-	_snow_nl = _SNOW_NL_DESC; \
-	_snow_printd(context, 0, \
-		_SNOW_COLOR_BOLD "Testing %s" _SNOW_COLOR_RESET ":\n", \
-		name)
+	if (!_snow_opts[_SNOW_OPT_QUIET].boolval) { \
+		(context)->printed_testing = 1; \
+		_snow_print("\n"); \
+		_snow_nl = _SNOW_NL_DESC; \
+		if (_snow_opts[_SNOW_OPT_COLOR].boolval) { \
+			_snow_printd(context, -1, \
+				_SNOW_COLOR_BOLD "Testing %s" _SNOW_COLOR_RESET ":\n", \
+				name); \
+		} else { \
+			_snow_printd(context, -1, \
+				"Testing %s:\n", name); \
+		} \
+	}
+
+void _snow_print_testing_parents(struct _snow_context *context) {
+	if (context == NULL || _snow_opts[_SNOW_OPT_QUIET].boolval)
+		return;
+
+	_snow_print_testing_parents(context->parent);
+
+	if (!context->printed_testing) {
+		_snow_print_testing(context, context->name);
+		context->printed_testing = 1;
+	}
+}
 
 #define _snow_print_result(context, name, passed, total) \
-	if (_snow_nl != _SNOW_NL_CASE) \
-		_snow_print("\n"); \
-	_snow_nl = _SNOW_NL_RES; \
-	_snow_printd(context, -1, \
-		_SNOW_COLOR_BOLD "%s: Passed %i/%i tests.\n" \
-		_SNOW_COLOR_RESET, \
-		name, passed, total); \
+	if ((context)->printed_testing && !_snow_opts[_SNOW_OPT_QUIET].boolval) { \
+		if (_snow_nl != _SNOW_NL_CASE) \
+			_snow_print("\n"); \
+		_snow_nl = _SNOW_NL_RES; \
+		if (_snow_opts[_SNOW_OPT_COLOR].boolval) { \
+			_snow_printd(context, -1, \
+				_SNOW_COLOR_BOLD "%s: Passed %i/%i tests.\n" \
+				_SNOW_COLOR_RESET, \
+				name, passed, total); \
+		} else { \
+			_snow_printd(context, -1, \
+				"%s: Passed %i/%i tests.\n", \
+				name, passed, total); \
+		} \
+	}
 
 #define _snow_print_maybe(context, name) \
-	do { \
-		_snow_printd(context, -1, \
-			_SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? " \
-			_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: " \
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " _SNOW_COLOR_RESET, \
-			name); \
-		fflush(stdout); \
-	} while (0)
+	if (!_snow_opts[_SNOW_OPT_QUIET].boolval && _snow_opts[_SNOW_OPT_MAYBES].boolval) { \
+		if (_snow_opts[_SNOW_OPT_COLOR].boolval) { \
+			_snow_printd(context, -1, \
+				_SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? " \
+				_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: " \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " _SNOW_COLOR_RESET, \
+				name); \
+		} else { \
+			_snow_printd(context, -1, \
+				"? Testing: %s: ", name); \
+		} \
+		if (!_snow_opts[_SNOW_OPT_CR].boolval) { \
+			_snow_print("\n"); \
+		} else { \
+			_snow_need_cr = 1; \
+			fflush(stdout); \
+		} \
+	}
 
 #define _snow_print_success(context, name) \
-	_snow_nl = _SNOW_NL_CASE; \
-	_snow_printd(context, -1, \
-		_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ " \
-		_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
-		_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s\n" \
-		_SNOW_COLOR_RESET, \
-		name)
+	if (!_snow_opts[_SNOW_OPT_QUIET].boolval) { \
+		_snow_nl = _SNOW_NL_CASE; \
+		if (_snow_opts[_SNOW_OPT_COLOR].boolval) { \
+			_snow_printd(context, -1, \
+				_SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ " \
+				_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: " \
+				_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s \n" \
+				_SNOW_COLOR_RESET, \
+				name); \
+		} else { \
+			_snow_printd(context, -1, \
+				"✓ Success: %s \n", name); \
+		} \
+	}
 
 #define _snow_print_failure(context, name) \
 	_snow_nl = _SNOW_NL_CASE; \
-	_snow_printd(context, -1, \
-		_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ " \
-		_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  " \
-		_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
-		_SNOW_COLOR_RESET ":\n", \
-		name)
+	if (_snow_opts[_SNOW_OPT_COLOR].boolval) { \
+		_snow_printd(context, -1, \
+			_SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ " \
+			_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  " \
+			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s" \
+			_SNOW_COLOR_RESET ":\n", \
+			name); \
+	} else { \
+		_snow_printd(context, -1, \
+			"✕ Failed:  %s:\n", name); \
+	}
 
 /*
  * Define a function called snow_test_##testname,
@@ -301,7 +359,6 @@ int _snow_subdesc_after(struct _snow_context *context) {
 }
 
 #define subdesc(descname, ...) \
-	_snow_print_testing(_snow_context, #descname); \
 	for ( \
 		struct _snow_context _snow_ctx = { \
 				.name = #descname, \
@@ -310,6 +367,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 				.num_tests = 0, \
 				.num_success = 0, \
 				.done = 0, \
+				.printed_testing = 0, \
 				.enabled = \
 					_snow_context->enabled || \
 					_snow_desc_filter(_snow_context, #descname), \
@@ -334,6 +392,9 @@ int _snow_subdesc_after(struct _snow_context *context) {
 			} else { /* There are defers to run */ \
 			} \
 		} else { \
+			if (!_snow_context->printed_testing) { \
+				_snow_print_testing_parents(_snow_context); \
+			} \
 			_snow_print_maybe(_snow_context, casename); \
 		} \
 	} \
@@ -350,6 +411,7 @@ int _snow_subdesc_after(struct _snow_context *context) {
 
 #define fail(...) \
 	do { \
+		_snow_exit_code = EXIT_FAILURE; \
 		_snow_print_failure(_snow_context, _snow_case_context->name); \
 		_snow_printd(_snow_context, -1, "    "); \
 		_snow_print(__VA_ARGS__); \
@@ -659,6 +721,24 @@ int _snow_main(int argc, char **argv) {
 		}
 	}
 
+	printf(
+		"version: %i\n"
+		"help: %i\n"
+		"color: %i\n"
+		"quiet: %i\n"
+		"maybes: %i\n"
+		"cr: %i\n"
+		"timer: %i\n"
+		"log: %s\n",
+		_snow_opts[_SNOW_OPT_VERSION].boolval,
+		_snow_opts[_SNOW_OPT_HELP].boolval,
+		_snow_opts[_SNOW_OPT_COLOR].boolval,
+		_snow_opts[_SNOW_OPT_QUIET].boolval,
+		_snow_opts[_SNOW_OPT_MAYBES].boolval,
+		_snow_opts[_SNOW_OPT_CR].boolval,
+		_snow_opts[_SNOW_OPT_TIMER].boolval,
+		_snow_opts[_SNOW_OPT_LOG].strval);
+
 	// Open log file
 	if (strcmp(_snow_opts[_SNOW_OPT_LOG].strval, "-") == 0) {
 		_snow_log_file = stdout;
@@ -679,7 +759,11 @@ int _snow_main(int argc, char **argv) {
 		return EXIT_SUCCESS;
 	}
 
-	// Set defaults when log is not a TTY
+	// Set context-dependent defaults
+	// (the dumb defaults were set in the snow_main macro)
+	if (getenv("NO_COLOR") != NULL) {
+		_snow_opt_default(_SNOW_OPT_COLOR, 0);
+	}
 	int is_tty = isatty(fileno(_snow_log_file));
 	if (!is_tty) {
 		_snow_opt_default(_SNOW_OPT_COLOR, 0);
@@ -688,6 +772,7 @@ int _snow_main(int argc, char **argv) {
 	}
 
 	struct _snow_context root_context = { 0 };
+	root_context.printed_testing = 1;
 	root_context.name = "Total";
 
 	struct _snow_context context = { 0 };
@@ -698,20 +783,32 @@ int _snow_main(int argc, char **argv) {
 
 		context.name = "";
 		context.enabled = _snow_desc_filter(&context, desc->name);
+		context.printed_testing = 0;
 		context.name = desc->name;
 
-		_snow_print_testing(&root_context, context.name);
 		desc->func(&context);
-		_snow_print_result(&context,
-			context.name, context.num_success, context.num_tests);
+		_snow_print_result(&context, context.name,
+			context.num_success, context.num_tests);
 		root_context.num_tests += context.num_tests;
 		root_context.num_success += context.num_success;
 	}
-	_snow_print_result(&context, root_context.name,
-		root_context.num_success, root_context.num_tests);
-	_snow_print("\n");
 
-	return EXIT_SUCCESS;
+	if (_snow_opts[_SNOW_OPT_QUIET].boolval) {
+		_snow_opts[_SNOW_OPT_QUIET].boolval = 0;
+		_snow_print_result(&root_context, root_context.name,
+			root_context.num_success, root_context.num_tests);
+	} else {
+		_snow_print_result(&root_context, root_context.name,
+			root_context.num_success, root_context.num_tests);
+		_snow_print("\n");
+	}
+
+	free(_snow_desc_filter_str);
+	_snow_arr_reset(&_snow_descs);
+	_snow_arr_reset(&_snow_defers);
+	_snow_arr_reset(&_snow_desc_patterns);
+
+	return _snow_exit_code;
 }
 
 /*
@@ -725,6 +822,9 @@ int _snow_main(int argc, char **argv) {
 	struct _snow_arr _snow_defers = { sizeof(jmp_buf), NULL, 0, 0 }; \
 	struct _snow_arr _snow_desc_patterns = { sizeof(char *), NULL, 0, 0 }; \
 	FILE *_snow_log_file = NULL; \
+	int _snow_exit_code = EXIT_SUCCESS; \
+	char *_snow_desc_filter_str = NULL; \
+	size_t _snow_desc_filter_str_size = 0; \
 	struct _snow_opt _snow_opts[] = { \
 		[ _SNOW_OPT_VERSION ] = { "version", 'v',  1, .boolval = 0,   0 }, \
 		[ _SNOW_OPT_HELP ]    = { "help",    'h',  1, .boolval = 0,   0 }, \
