@@ -2,25 +2,30 @@
 
 #ifdef SNOW_ENABLED
 describe(vector) {
+	before_each() {
+		printf("\nI am first before\n");
+	}
+	after_each() {
+		printf("I am first after\n");
+	}
+	it("hello there") {
+		printf("I am test, hello there\n");
+		defer(printf("hello 1\n"));
+		defer(printf("world 2\n"));
+	}
+	it("no u") {
+		defer(printf("I am first defer\n"));
+		printf("Hello, I am in 'no u' because in_case is %i\n", _snow.in_case);
+		defer(printf("I am second defer\n"));
+	}
 
-	subdesc(vector_set) {
-		it("hello there") {
-			printf("hello there\n");
-			defer(printf("hello\n"));
-			defer(printf("world\n"));
+	subdesc(something) {
+		before_each() {
+			printf("I am second before\n");
 		}
-	}
-
-	subdesc(vector_get) {
-	}
-}
-
-describe(vaftor) {
-
-	subdesc(vaftor_set) {
-	}
-
-	subdesc(vaftor_get) {
+		it("something in something") {
+			printf("hello, am in something in something\n");
+		}
 	}
 }
 

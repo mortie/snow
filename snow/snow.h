@@ -85,12 +85,20 @@ struct _snow {
 		const char *name;
 		double start_time;
 		struct _snow_arr defers;
-		jmp_buf jmp;
+		jmp_buf done_jmp;
+		jmp_buf defer_jmp;
 	} current_case;
 };
 
 extern struct _snow _snow;
 extern int _snow_inited;
+
+/*
+ * Default _snow_before_each and _snow_after_each functions
+ * which just do nothing.
+ */
+__attribute__((unused)) void _snow_before_each() {}
+__attribute__((unused)) void _snow_after_each() {}
 
 static void _snow_init() {
 	_snow_inited = 1;
@@ -110,7 +118,10 @@ static double _snow_now() {
 
 __attribute__((unused))
 static void _snow_desc_begin(const char *name) {
-	struct _snow_desc desc = { name, _snow_now(), 0, 0 };
+	struct _snow_desc desc = { 0 };
+	desc.name = name;
+	desc.start_time = _snow_now();
+
 	_snow_arr_push(&_snow.desc_stack, &desc);
 	printf("pushing %s\n", desc.name);
 
@@ -132,22 +143,31 @@ static void _snow_desc_end() {
 	}
 }
 
-__attribute__((unused))
-static void _snow_case_begin(const char *name) {
-	_snow.in_case = 1;
-	_snow.current_case.name = name;
-	_snow.current_case.start_time = _snow_now();
-	_snow_arr_reset(&_snow.current_case.defers);
-
-	int ret = setjmp(_snow.current_case.jmp);
-	if (ret == 1) {
-		if (_snow.current_case.defers.length > 0) {
-			jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers);
-			longjmp(*jmp, 1);
-		}
+/*
+ * Begin a test case. It has to be a macro, not a function, because
+ * longjmp can't jump to setjmps from a function call which has returned.
+ */
+#define _snow_case_begin(casename, before, after) \
+	_snow.in_case = 1; \
+	_snow.current_case.name = casename; \
+	_snow.current_case.start_time = _snow_now(); \
+	_snow_arr_reset(&_snow.current_case.defers); \
+	before(); \
+	/* Set jump point which _snow_case_end */ \
+	/* (and each defer) will jump back to */ \
+	if (setjmp(_snow.current_case.done_jmp) == 1) { \
+		while (_snow.current_case.defers.length > 0) { \
+			if (setjmp(_snow.current_case.defer_jmp) == 0) { \
+				jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers); \
+				longjmp(*jmp, 1); \
+			} \
+		} \
+		after(); \
 	}
-}
 
+/*
+ * Called after a test case block is done.
+ */
 __attribute__((unused))
 static void _snow_case_end(int success) {
 	if (!_snow.in_case)
@@ -158,19 +178,31 @@ static void _snow_case_end(int success) {
 		_snow.current_desc->num_success += 1;
 	}
 
-	longjmp(_snow.current_case.jmp, 1);
+	longjmp(_snow.current_case.done_jmp, 1);
 }
 
+/*
+ * Called by defer, to register a new jmp_buf
+ * on the defer stack.
+ */
 __attribute__((unused))
 static void _snow_case_defer_push(jmp_buf jmp) {
 	_snow_arr_push(&_snow.current_case.defers, jmp);
 }
 
+/*
+ * Called when a defer is done.
+ * Will jump back to _snow_case_begin.
+ */
 __attribute__((unused))
 static void _snow_case_defer_jmp() {
-	longjmp(_snow.current_case.jmp, 1);
+	longjmp(_snow.current_case.defer_jmp, 1);
 }
 
+/*
+ * The main function, which runs all top-level describes
+ * and cleans up.
+ */
 __attribute__((unused))
 static int _snow_main(int argc, char **argv) {
 	(void)argc;
@@ -183,11 +215,12 @@ static int _snow_main(int argc, char **argv) {
 		_snow_desc_end();
 	}
 
+	_snow_arr_reset(&_snow.desc_funcs);
+	_snow_arr_reset(&_snow.desc_stack);
+	_snow_arr_reset(&_snow.current_case.defers);
+
 	return _snow.exit_code;
 }
-
-#define _snow_after_block(expr) \
-	for (int _snow_done = 0; _snow_done == 0; ((expr), _snow_done += 1))
 
 /*
  * Interface
@@ -205,11 +238,12 @@ static int _snow_main(int argc, char **argv) {
 
 #define subdesc(name) \
 	_snow_desc_begin(#name); \
-	_snow_after_block(_snow_desc_end())
+	for (int _snow_desc_done = 0; _snow_desc_done == 0; \
+		(_snow_desc_done = 1, _snow_desc_end()))
 
 #define it(name) \
-	_snow_case_begin(name); \
-	_snow_after_block(_snow_case_end(1))
+	_snow_case_begin(name, _snow_before_each, _snow_after_each); \
+	for (; _snow.in_case; _snow_case_end(1))
 #define test it
 
 #define defer(...) \
@@ -222,6 +256,11 @@ static int _snow_main(int argc, char **argv) {
 			_snow_case_defer_jmp(); \
 		} \
 	} while (0)
+
+#define before_each() \
+	void _snow_before_each()
+#define after_each() \
+	void _snow_after_each()
 
 #define snow_main() \
 	struct _snow _snow; \
