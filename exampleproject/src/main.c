@@ -4,7 +4,7 @@
 #ifdef SNOW_ENABLED
 
 #include <snow/snow.h>
-snow_main();
+snow_main()
 
 #else
 

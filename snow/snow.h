@@ -9,6 +9,8 @@
 #include <fnmatch.h>
 #include <stdint.h>
 
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 #define SNOW_VERSION "X"
 
 #define SNOW_MAX_DEPTH 128
@@ -202,6 +204,7 @@ static char *_snow_spaces(int depth) {
 	return _snow_spaces_str;
 }
 
+__attribute__((unused))
 static double _snow_now() {
 	if (_snow.opts[_SNOW_OPT_TIMER].boolval)
 		return 0;
@@ -217,6 +220,7 @@ static double _snow_now() {
 
 #define _snow_print(...) fprintf(_snow.print.file, __VA_ARGS__)
 
+__attribute__((unused))
 static void _snow_print_timer(double start_time) {
 	double msec = _snow_now() - start_time;
 	if (msec < 1000) {
@@ -226,6 +230,7 @@ static void _snow_print_timer(double start_time) {
 	}
 }
 
+__attribute__((unused))
 static void _snow_print_case_begin() {
 	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
@@ -254,6 +259,7 @@ static void _snow_print_case_begin() {
 	}
 }
 
+__attribute__((unused))
 static void _snow_print_case_success() {
 	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
@@ -280,8 +286,8 @@ static void _snow_print_case_success() {
 	_snow_print("\n");
 }
 
+__attribute__((unused))
 static char *_snow_print_case_failure() {
-	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return "";
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
 	if (_snow.print.need_cr)
@@ -302,6 +308,7 @@ static char *_snow_print_case_failure() {
 	return spaces;
 }
 
+__attribute__((unused))
 static void _snow_print_desc_begin_index(size_t index) {
 	if (index > 0) {
 		struct _snow_desc *parent = _snow_arr_get(&_snow.desc_stack, index - 1);
@@ -326,12 +333,14 @@ static void _snow_print_desc_begin_index(size_t index) {
 	desc->printed = 1;
 }
 
+__attribute__((unused))
 static void _snow_print_desc_begin() {
 	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	_snow_print_desc_begin_index(_snow.desc_stack.length - 1);
 }
 
-void _snow_print_desc_end() {
+__attribute__((unused))
+static void _snow_print_desc_end() {
 	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
@@ -395,9 +404,10 @@ void _snow_print_desc_end() {
  * which just do nothing.
  */
 
-__attribute__((unused)) void _snow_before_each() {}
-__attribute__((unused)) void _snow_after_each() {}
+__attribute__((unused)) static void _snow_before_each() {}
+__attribute__((unused)) static void _snow_after_each() {}
 
+__attribute__((unused))
 static void _snow_init() {
 	_snow_inited = 1;
 	_snow.exit_code = EXIT_SUCCESS;
@@ -531,6 +541,8 @@ static void _snow_case_end(int success) {
 	if (success) {
 		_snow.current_desc->num_success += 1;
 		_snow_print_case_success();
+	} else {
+		_snow.exit_code = EXIT_FAILURE;
 	}
 
 	longjmp(_snow.current_case.done_jmp, 1);
@@ -819,7 +831,8 @@ static int _snow_main(int argc, char **argv) {
  */
 
 #define _snow_define_assertfunc(name, type, pattern) \
-	int _snow_assert_##name( \
+	__attribute__((unused)) \
+	static int _snow_assert_##name( \
 			int invert, char *explanation, \
 			type a, char *astr, type b, char *bstr) { \
 		int eq = (a) == (b); \
@@ -838,7 +851,8 @@ _snow_define_assertfunc(uint, uintmax_t, "%ju")
 _snow_define_assertfunc(dbl, double, "%g")
 _snow_define_assertfunc(ptr, void *, "%p")
 
-int _snow_assert_str(
+__attribute__((unused))
+static int _snow_assert_str(
 		int invert, char *explanation,
 		char *a, char *astr, char *b, char *bstr) {
 	int eq = strcmp(a, b) == 0;
@@ -853,7 +867,8 @@ int _snow_assert_str(
 	return 0;
 }
 
-int _snow_assert_buf(
+__attribute__((unused))
+static int _snow_assert_buf(
 		int invert, char *explanation,
 		void *a, char *astr, void *b, char *bstr, size_t size)
 {
@@ -868,7 +883,8 @@ int _snow_assert_buf(
 	return 0;
 }
 
-int _snow_assert_fake() {
+__attribute__((unused))
+static int _snow_assert_fake() {
 	return -1;
 }
 
@@ -893,7 +909,7 @@ int _snow_assert_fake() {
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_dbl( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b) \
+			0, "" __VA_ARGS__, (a), #a, (b), #b); \
 	} while (0)
 #define asserteq_ptr(a, b, ...) \
 	do { \
@@ -930,41 +946,41 @@ int _snow_assert_fake() {
  * Explicit assertneq macros
  */
 
-#define assernteq_dbl(a, b, ...) \
+#define assertneq_dbl(a, b, ...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_dbl( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+			1, "" __VA_ARGS__, (a), #a, (b), #b); \
 	} while (0)
-#define assernteq_ptr(a, b, ...) \
+#define assertneq_ptr(a, b, ...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_ptr( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+			1, "" __VA_ARGS__, (a), #a, (b), #b); \
 	} while (0)
-#define assernteq_str(a, b, ...) \
+#define assertneq_str(a, b, ...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_str( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+			1, "" __VA_ARGS__, (a), #a, (b), #b); \
 	} while (0)
-#define assernteq_int(a, b, ...) \
+#define assertneq_int(a, b, ...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_int( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+			1, "" __VA_ARGS__, (a), #a, (b), #b); \
 	} while (0)
-#define assernteq_uint(a, b, ...) \
+#define assertneq_uint(a, b, ...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_uint( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+			2, "" __VA_ARGS__, (a), #a, (b), #b); \
 	} while (0)
-#define assernteq_buf(a, b, size, ...) \
+#define assertneq_buf(a, b, size, ...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_buf( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b, (size)) \
+			1, "" __VA_ARGS__, (a), #a, (b), #b, (size)); \
 	} while (0)
 
 /*

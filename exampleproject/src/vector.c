@@ -50,31 +50,31 @@ void *vector_get(vector *vec, size_t idx)
 
 #include <snow/snow.h>
 
-describe(vector, {
+describe(vector) {
 	vector vec;
 
-	it("breaks the rules of math (to demonstrate failed tests)", {
+	it("breaks the rules of math (to demonstrate failed tests)") {
 		assert(1 == 2);
-	});
+	}
 
-	after_each({
+	after_each() {
 		vector_free(&vec);
-	});
+	}
 
-	it("inits vectors correctly", {
+	it("inits vectors correctly") {
 		vector_init(&vec, 53);
 
 		asserteq(vec.size, 0);
 		asserteq(vec.count, 0);
 		asserteq(vec.elem_size, 53);
 		asserteq(vec.size, 0);
-	});
+	}
 
-	before_each({
+	before_each() {
 		vector_init(&vec, sizeof(int));
-	});
+	}
 
-	it("allocates vectors based on elem_size", {
+	it("allocates vectors based on elem_size") {
 		vector_alloc(&vec, 10);
 		asserteq(vec.elem_size, sizeof(int));
 		asserteq(vec.count, 0);
@@ -82,34 +82,34 @@ describe(vector, {
 		/* Not an assert, but will cause valgrind to complain
 		 * if not enough memory was allocated */
 		memset(vec.elems, 0xff, 10 * vec.elem_size);
-	});
+	}
 
-	subdesc(vector_set, {
-		it("sets values inside of the allocated range", {
+	subdesc(vector_set) {
+		it("sets values inside of the allocated range") {
 			vector_alloc(&vec, 2);
 			int el = 10;
 			vector_set(&vec, 1, &el);
 			asserteq(*(int *)((char *)vec.elems + sizeof(int)), 10);
-		});
+		}
 
-		it("allocates space when setting values outside the allocated range", {
+		it("allocates space when setting values outside the allocated range") {
 			int el = 10;
 			vector_set(&vec, 50, &el);
 			asserteq(*(int *)((char *)vec.elems + (sizeof(int) * 50)), 10);
-		});
-	});
+		}
+	}
 
-	subdesc(vector_get, {
-		it("gets values inside the allocated range", {
+	subdesc(vector_get) {
+		it("gets values inside the allocated range") {
 			int el = 500;
 			vector_set(&vec, 10, &el);
 			asserteq(*(int *)vector_get(&vec, 10), 500);
-		});
+		}
 
-		it("returns NULL when trying to access values outside the allocated range", {
+		it("returns NULL when trying to access values outside the allocated range") {
 			int el = 10;
 			vector_set(&vec, 100, &el);
 			asserteq(vector_get(&vec, 101), NULL);
-		});
-	});
-});
+		}
+	}
+}
