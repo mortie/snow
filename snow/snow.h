@@ -7,6 +7,7 @@
 #include <setjmp.h>
 #include <unistd.h>
 #include <fnmatch.h>
+#include <stdint.h>
 
 #define SNOW_VERSION "X"
 
@@ -122,6 +123,7 @@ struct _snow_desc {
 	int num_tests;
 	int num_success;
 	int enabled;
+	int printed;
 };
 
 struct _snow_desc_func {
@@ -131,6 +133,9 @@ struct _snow_desc_func {
 
 struct _snow {
 	int exit_code;
+	char *filename;
+	int linenum;
+
 	struct _snow_arr desc_funcs;
 	struct _snow_arr desc_stack;
 	struct _snow_arr desc_patterns;
@@ -149,6 +154,11 @@ struct _snow {
 	struct {
 		FILE *file;
 		int need_cr;
+		enum {
+			_SNOW_PRINT_CASE,
+			_SNOW_PRINT_DESC_BEGIN,
+			_SNOW_PRINT_DESC_END,
+		} prev_print;
 	} print;
 };
 
@@ -216,18 +226,24 @@ static void _snow_print_timer(double start_time) {
 	}
 }
 
-static void _snow_print_maybe() {
-	char *spaces = _snow_spaces(_snow.desc_stack.length);
+static void _snow_print_case_begin() {
+	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
+	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
+
+	_snow.print.prev_print = _SNOW_PRINT_CASE;
+
+	if (!_snow.opts[_SNOW_OPT_MAYBES].boolval)
+		return;
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
 			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? "
 			_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: "
 			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " _SNOW_COLOR_RESET,
-			spaces, _snow.current_desc->name);
+			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
-			"%s? Testing: %s: ", spaces, _snow.current_desc->name);
+			"%s? Testing: %s: ", spaces, _snow.current_case.name);
 	}
 
 	if (_snow.opts[_SNOW_OPT_CR].boolval) {
@@ -238,8 +254,9 @@ static void _snow_print_maybe() {
 	}
 }
 
-static void _snow_print_success() {
-	char *spaces = _snow_spaces(_snow.desc_stack.length);
+static void _snow_print_case_success() {
+	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
+	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
 	if (_snow.print.need_cr)
 		_snow_print("\r");
@@ -253,7 +270,7 @@ static void _snow_print_success() {
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
-			"✓ Success: %s ", _snow.current_desc->name);
+			"%s✓ Success: %s ", spaces, _snow.current_case.name);
 	}
 
 	if (_snow.opts[_SNOW_OPT_TIMER].boolval) {
@@ -263,20 +280,64 @@ static void _snow_print_success() {
 	_snow_print("\n");
 }
 
-static void _snow_print_testing() {
+static char *_snow_print_case_failure() {
+	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return "";
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
+
+	if (_snow.print.need_cr)
+		_snow_print("\r");
+
+	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
+		_snow_print(
+			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ "
+			_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  "
+			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
+			_SNOW_COLOR_RESET ":\n",
+			spaces, _snow.current_case.name);
+	} else {
+		_snow_print(
+			"%s✕ Failed:  %s:\n", spaces, _snow.current_case.name);
+	}
+
+	return spaces;
+}
+
+static void _snow_print_desc_begin_index(size_t index) {
+	if (index > 0) {
+		struct _snow_desc *parent = _snow_arr_get(&_snow.desc_stack, index - 1);
+		if (!parent->printed)
+			_snow_print_desc_begin_index(index - 1);
+	}
+
+	_snow_print("\n");
+	_snow.print.prev_print = _SNOW_PRINT_DESC_BEGIN;
+
+	struct _snow_desc *desc = _snow_arr_get(&_snow.desc_stack, index);
+	char *spaces = _snow_spaces(index);
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
 			"%s" _SNOW_COLOR_BOLD "Testing %s" _SNOW_COLOR_RESET ":\n",
-			spaces, _snow.current_desc->name);
+			spaces, desc->name);
 	} else {
-		_snow_print("%sTesting %s:\n", spaces, _snow.current_desc->name);
+		_snow_print("%sTesting %s:\n", spaces, desc->name);
 	}
+
+	desc->printed = 1;
 }
 
-void _snow_print_result() {
+static void _snow_print_desc_begin() {
+	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
+	_snow_print_desc_begin_index(_snow.desc_stack.length - 1);
+}
+
+void _snow_print_desc_end() {
+	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
+
+	if (_snow.print.prev_print != _SNOW_PRINT_CASE)
+		_snow_print("\n");
+	_snow.print.prev_print = _SNOW_PRINT_DESC_END;
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
@@ -300,9 +361,40 @@ void _snow_print_result() {
 }
 
 /*
+ * Failing
+ */
+
+#define _snow_fail(...) \
+	do { \
+		char *spaces = _snow_print_case_failure(); \
+		_snow_print("%s    ", spaces); \
+		_snow_print(__VA_ARGS__); \
+		_snow_print("\n"); \
+		_snow_print("%s    in %s:%i(%s)\n", spaces, \
+			_snow.filename, _snow.linenum, _snow.current_desc->full_name); \
+		_snow_case_end(0); \
+	} while (0)
+
+#define _snow_fail_expl(expl, fmt, ...) \
+	do { \
+		if (expl[0] == '\0') { \
+			_snow_fail(fmt ".", __VA_ARGS__); \
+		} else { \
+			_snow_fail(fmt ": %s", __VA_ARGS__, expl); \
+		} \
+	} while (0)
+
+#define _snow_fail_update() \
+	do { \
+		_snow.filename = __FILE__; \
+		_snow.linenum = __LINE__; \
+	} while (0)
+
+/*
  * Default _snow_before_each and _snow_after_each functions
  * which just do nothing.
  */
+
 __attribute__((unused)) void _snow_before_each() {}
 __attribute__((unused)) void _snow_after_each() {}
 
@@ -325,8 +417,6 @@ static void _snow_init() {
 
 	_snow_opt_str(_SNOW_OPT_LOG, "log", 'l', "-");
 
-	_snow.in_case = 0;
-
 	_snow.print.file = stdout;
 }
 
@@ -346,7 +436,7 @@ static void _snow_desc_begin(const char *name) {
 		desc.full_name = malloc(desc.full_name_len + 1);
 		strcpy(desc.full_name, name);
 	} else {
-		desc.full_name_len = strlen(name) + parent_desc->full_name_len;
+		desc.full_name_len = strlen(name) + parent_desc->full_name_len + 1;
 		desc.full_name = malloc(desc.full_name_len + 2);
 		strcpy(desc.full_name, parent_desc->full_name);
 		strcpy(desc.full_name + parent_desc->full_name_len, ".");
@@ -378,13 +468,12 @@ static void _snow_desc_begin(const char *name) {
 
 	_snow.current_desc =
 		(struct _snow_desc *)_snow_arr_top(&_snow.desc_stack);
-
-	_snow_print_testing();
 }
 
 __attribute__((unused))
 static void _snow_desc_end() {
-	_snow_print_result();
+	if (_snow.current_desc->printed)
+		_snow_print_desc_end();
 
 	struct _snow_desc *desc =
 		(struct _snow_desc *)_snow_arr_pop(&_snow.desc_stack);
@@ -409,11 +498,12 @@ static void _snow_desc_end() {
 #define _snow_case_begin(casename, before, after) \
 	do { \
 		if (!_snow.current_desc->enabled) break; \
+		if (!_snow.current_desc->printed) _snow_print_desc_begin(); \
 		_snow.in_case = 1; \
 		_snow.current_case.name = casename; \
 		_snow.current_case.start_time = _snow_now(); \
 		_snow_arr_reset(&_snow.current_case.defers); \
-		_snow_print_maybe(); \
+		_snow_print_case_begin(); \
 		_snow.current_desc->num_tests += 1; \
 		before(); \
 		/* Set jump point which _snow_case_end */ \
@@ -440,7 +530,7 @@ static void _snow_case_end(int success) {
 	_snow.in_case = 0;
 	if (success) {
 		_snow.current_desc->num_success += 1;
-		_snow_print_success();
+		_snow_print_case_success();
 	}
 
 	longjmp(_snow.current_case.done_jmp, 1);
@@ -595,9 +685,6 @@ static int _snow_main(int argc, char **argv) {
 
 	// Set context-dependent defaults
 	// (the dumb defaults were set in the snow_main macro)
-	if (getenv("NO_COLOR") != NULL) {
-		_snow_opt_default(_SNOW_OPT_COLOR, 0);
-	}
 	int is_tty = isatty(fileno(_snow.print.file));
 	if (is_tty) {
 		_snow_opt_default(_SNOW_OPT_COLOR, 1);
@@ -608,6 +695,9 @@ static int _snow_main(int argc, char **argv) {
 		_snow_opt_default(_SNOW_OPT_MAYBES, 0);
 		_snow_opt_default(_SNOW_OPT_CR, 0);
 	}
+	if (getenv("NO_COLOR") != NULL) {
+		_snow_opt_default(_SNOW_OPT_COLOR, 0);
+	}
 
 	// Other defaults
 	_snow_opt_default(_SNOW_OPT_QUIET, 0);
@@ -617,11 +707,34 @@ static int _snow_main(int argc, char **argv) {
 	 * Run descs
 	 */
 
+	int total_num_tests = 0;
+	int total_num_success = 0;
+
 	for (size_t i = 0; i < _snow.desc_funcs.length; ++i) {
 		struct _snow_desc_func *df = _snow_arr_get(&_snow.desc_funcs, i);
 		_snow_desc_begin(df->name);
 		df->func();
+		total_num_tests += _snow.current_desc->num_tests;
+		total_num_success += _snow.current_desc->num_success;
 		_snow_desc_end();
+	}
+
+	if (_snow.opts[_SNOW_OPT_QUIET].boolval) {
+		_snow_print("Total: %i/%i\n", total_num_success, total_num_tests);
+	} else {
+		_snow_print("\n");
+
+		if (_snow.desc_funcs.length > 1) {
+			if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
+				_snow_print(
+					_SNOW_COLOR_BOLD "Total: %i/%i\n" _SNOW_COLOR_RESET,
+					total_num_success, total_num_tests);
+			} else {
+				_snow_print("Total: %i/%i\n", total_num_success, total_num_tests);
+			}
+
+			_snow_print("\n");
+		}
 	}
 
 	/*
@@ -676,11 +789,232 @@ static int _snow_main(int argc, char **argv) {
 #define after_each() \
 	void _snow_after_each()
 
+#define fail(...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_fail(__VA_ARGS__); \
+	} while (0)
+
 #define snow_main() \
-	struct _snow _snow; \
-	int _snow_inited = 0;
+	struct _snow _snow = { 0 }; \
+	int _snow_inited = 0; \
 	int main(int argc, char **argv) { \
 		return _snow_main(argc, argv); \
 	}
+
+/*
+ * Assert
+ */
+
+#define assert(x, ...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" __VA_ARGS__; \
+		if (!(x)) \
+			_snow_fail_expl(explanation, "Assertion failed: %s", #x); \
+	} while (0)
+
+/*
+ * Various assert functions
+ */
+
+#define _snow_define_assertfunc(name, type, pattern) \
+	int _snow_assert_##name( \
+			int invert, char *explanation, \
+			type a, char *astr, type b, char *bstr) { \
+		int eq = (a) == (b); \
+		if (!eq && !invert) \
+			_snow_fail_expl(explanation, \
+				"(" #name ") Expected %s to equal %s, but got " pattern, \
+				astr, bstr, a); \
+		else if (eq && invert) \
+			_snow_fail_expl(explanation, \
+				"(" #name ") Expected %s to not equal %s (" pattern ")", \
+				astr, bstr, a); \
+		return 0; \
+	}
+_snow_define_assertfunc(int, intmax_t, "%ji")
+_snow_define_assertfunc(uint, uintmax_t, "%ju")
+_snow_define_assertfunc(dbl, double, "%g")
+_snow_define_assertfunc(ptr, void *, "%p")
+
+int _snow_assert_str(
+		int invert, char *explanation,
+		char *a, char *astr, char *b, char *bstr) {
+	int eq = strcmp(a, b) == 0;
+	if (!eq && !invert)
+		_snow_fail_expl(explanation,
+			"(str) Expected %s to equal %s, but got \"%s\"",
+			astr, bstr, a);
+	else if (eq && invert)
+		_snow_fail_expl(explanation,
+			"(str) Expected %s to not equal %s (\"%s\")",
+			astr, bstr, a);
+	return 0;
+}
+
+int _snow_assert_buf(
+		int invert, char *explanation,
+		void *a, char *astr, void *b, char *bstr, size_t size)
+{
+	int eq = memcmp(a, b, size) == 0;
+	if (!eq && !invert) {
+		_snow_fail_expl(explanation, "(buf) Expected %s to equal %s", \
+			astr, bstr);
+	} else if (eq && invert) {
+		_snow_fail_expl(explanation, "(buf) Expected %s to not equal %s",
+			astr, bstr);
+	}
+	return 0;
+}
+
+int _snow_assert_fake() {
+	return -1;
+}
+
+#define _snow_generic_assert(x) \
+	_Generic((x), \
+		float: _snow_assert_dbl, \
+		double: _snow_assert_dbl, \
+		void *: _snow_assert_ptr, \
+		char *: _snow_assert_str, \
+		int: _snow_assert_int, \
+		long long: _snow_assert_int, \
+		unsigned int: _snow_assert_uint, \
+		unsigned long long: _snow_assert_uint, \
+		size_t: _snow_assert_uint, \
+		default: _snow_assert_fake)
+
+/*
+ * Explicit asserteq macros
+ */
+
+#define asserteq_dbl(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_dbl( \
+			0, "" __VA_ARGS__, (a), #a, (b), #b) \
+	} while (0)
+#define asserteq_ptr(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_ptr( \
+			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+	} while (0)
+#define asserteq_str(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_str( \
+			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+	} while (0)
+#define asserteq_int(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_int( \
+			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+	} while (0)
+#define asserteq_uint(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_uint( \
+			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+	} while (0)
+#define asserteq_buf(a, b, size, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_buf( \
+			0, "" __VA_ARGS__, (a), #a, (b), #b, size); \
+	} while (0)
+
+/*
+ * Explicit assertneq macros
+ */
+
+#define assernteq_dbl(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_dbl( \
+			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+	} while (0)
+#define assernteq_ptr(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_ptr( \
+			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+	} while (0)
+#define assernteq_str(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_str( \
+			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+	} while (0)
+#define assernteq_int(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_int( \
+			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+	} while (0)
+#define assernteq_uint(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_uint( \
+			1, "" __VA_ARGS__, (a), #a, (b), #b) \
+	} while (0)
+#define assernteq_buf(a, b, size, ...) \
+	do { \
+		_snow_fail_update(); \
+		_snow_assert_buf( \
+			1, "" __VA_ARGS__, (a), #a, (b), #b, (size)) \
+	} while (0)
+
+/*
+ * Automatic asserteq
+ */
+
+#define asserteq(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" __VA_ARGS__; \
+		int ret = _snow_generic_assert(b)( \
+			0, explanation, (a), #a, (b), #b); \
+		if (ret < 0) { \
+			typeof (a) _a = a; \
+			typeof (b) _b = b; \
+			if (sizeof(a) != sizeof(b)) { \
+				_snow_fail_expl(explanation, \
+					"Expected %s to equal %s, but their lengths don't match", \
+					#a, #b); \
+			} else { \
+				_snow_assert_buf( \
+					0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+			} \
+		} \
+	} while (0)
+
+/*
+ * Automatic assertneq
+ */
+
+#define assertneq(a, b, ...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" __VA_ARGS__; \
+		if (sizeof(a) != sizeof(b)) { \
+			break; \
+		} else { \
+			int ret = _snow_generic_assert(b)( \
+				1, explanation, (a), #a, (b), #b); \
+			if (ret < 0) { \
+				typeof (a) _a = a; \
+				typeof (b) _b = b; \
+				if (sizeof(_a) != sizeof(_b)) { \
+					break; \
+				} else { \
+					_snow_assert_buf( \
+						1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				} \
+			} \
+		} \
+} while (0)
 
 #endif

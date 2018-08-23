@@ -2,30 +2,24 @@
 
 #ifdef SNOW_ENABLED
 describe(vector) {
-	before_each() {
-		//printf("\nI am first before\n");
-	}
-	after_each() {
-		//printf("I am first after\n");
-	}
-	it("hello there") {
-		//printf("I am test, hello there\n");
-		//defer(printf("hello 1\n"));
-		//defer(printf("world 2\n"));
-	}
-	it("no u") {
-		//defer(printf("I am first defer\n"));
-		//printf("Hello, I am in 'no u' because in_case is %i\n", _snow.in_case);
-		//defer(printf("I am second defer\n"));
+	it("breaks the rules of math (to demonstrate failed tests)") {
+		asserteq(10, 20);
 	}
 
-	subdesc(something) {
-		before_each() {
-			//printf("I am second before\n");
-		}
-		it("something in something") {
-			//printf("hello, am in something in something\n");
-		}
+	it("inits vectors correctly") {}
+
+	it("allocates vectors based on elem_size") {}
+
+	subdesc(vector_set) {
+		it("sets values inside of allocated range") {}
+
+		it("allocates space when setting values outside the allocated range") {}
+	}
+
+	subdesc(vector_get) {
+		it("gets values inside the allocated range") {}
+
+		it("returns NULL when trying to access values outside the allocated range") {}
 	}
 }
 
