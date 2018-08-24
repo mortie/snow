@@ -2,7 +2,7 @@
 Testing test:
 ✓ Success: success (1.00s)
 ✕ Failed:  failure:
-    Assertion failed: 0
-    in cases/commandline.c:test
-test: Passed 1/2 tests. (1.00s)
+    Assertion failed: 0.
+    in cases/commandline.c:16(test)
+test: Passed 1/2 tests. (4.00s)
 

@@ -204,6 +204,7 @@ static char *_snow_spaces(int depth) {
 	return _snow_spaces_str;
 }
 
+#ifndef SNOW_DUMMY_TIMER
 __attribute__((unused))
 static double _snow_now() {
 	if (_snow.opts[_SNOW_OPT_TIMER].boolval)
@@ -213,6 +214,14 @@ static double _snow_now() {
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0;
 }
+#else
+__attribute__((unused))
+static double _snow_now() {
+	static double time;
+	time += 1000;
+	return time;
+}
+#endif
 
 /*
  * Printing
@@ -265,21 +274,22 @@ static void _snow_print_case_success() {
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
 	if (_snow.print.need_cr)
-		_snow_print("\r");
+		_snow_print(" \r");
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
 			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ "
 			_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s "
+			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
 			_SNOW_COLOR_RESET,
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
-			"%s✓ Success: %s ", spaces, _snow.current_case.name);
+			"%s✓ Success: %s", spaces, _snow.current_case.name);
 	}
 
 	if (_snow.opts[_SNOW_OPT_TIMER].boolval) {
+		_snow_print(" ");
 		_snow_print_timer(_snow.current_case.start_time);
 	}
 
@@ -291,7 +301,7 @@ static char *_snow_print_case_failure() {
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
 	if (_snow.print.need_cr)
-		_snow_print("\r");
+		_snow_print(" \r");
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
@@ -640,8 +650,8 @@ static int _snow_main(int argc, char **argv) {
 		if (inverted) name += 3;
 
 		int is_match = 0;
-		for (int i = 0; i < _SNOW_OPT_LAST; ++i) {
-			struct _snow_opt *opt = _snow.opts + i;
+		for (int j = 0; i < _SNOW_OPT_LAST; ++j) {
+			struct _snow_opt *opt = _snow.opts + j;
 			is_match = is_long ? strcmp(name, opt->name) == 0 : name[0] == opt->shortname;
 			if (!is_match) continue;
 
@@ -655,7 +665,7 @@ static int _snow_main(int argc, char **argv) {
 				}
 
 				if (i + 1 >= argc ) {
-					fprintf(stderr, "%s: Argument expected.\n", arg);
+					fprintf(stderr, "%s: Argument expected.", arg);
 					return EXIT_FAILURE;
 				}
 
@@ -719,8 +729,10 @@ static int _snow_main(int argc, char **argv) {
 	 * Run descs
 	 */
 
+	double total_start_time = _snow_now();
 	int total_num_tests = 0;
 	int total_num_success = 0;
+	int total_descs_ran = 0;
 
 	for (size_t i = 0; i < _snow.desc_funcs.length; ++i) {
 		struct _snow_desc_func *df = _snow_arr_get(&_snow.desc_funcs, i);
@@ -728,25 +740,35 @@ static int _snow_main(int argc, char **argv) {
 		df->func();
 		total_num_tests += _snow.current_desc->num_tests;
 		total_num_success += _snow.current_desc->num_success;
+		total_descs_ran += !!_snow.current_desc->printed;
 		_snow_desc_end();
 	}
 
-	if (_snow.opts[_SNOW_OPT_QUIET].boolval) {
-		_snow_print("Total: %i/%i\n", total_num_success, total_num_tests);
-	} else {
+	int should_print_total =
+		_snow.opts[_SNOW_OPT_QUIET].boolval ||
+		total_descs_ran > 1;
+
+	if (!_snow.opts[_SNOW_OPT_QUIET].boolval)
 		_snow_print("\n");
 
-		if (_snow.desc_funcs.length > 1) {
-			if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
-				_snow_print(
-					_SNOW_COLOR_BOLD "Total: %i/%i\n" _SNOW_COLOR_RESET,
-					total_num_success, total_num_tests);
-			} else {
-				_snow_print("Total: %i/%i\n", total_num_success, total_num_tests);
-			}
-
-			_snow_print("\n");
+	if (should_print_total) {
+		if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
+			_snow_print(
+				_SNOW_COLOR_BOLD "Total: Passed %i/%i tests." _SNOW_COLOR_RESET,
+				total_num_success, total_num_tests);
+		} else {
+			_snow_print("Total: Passed %i/%i tests.",
+				total_num_success, total_num_tests);
 		}
+
+		if (_snow.opts[_SNOW_OPT_TIMER].boolval) {
+			_snow_print(" ");
+			_snow_print_timer(total_start_time);
+		}
+		_snow_print("\n");
+
+		if (!_snow.opts[_SNOW_OPT_QUIET].boolval)
+			_snow_print("\n");
 	}
 
 	/*
@@ -884,7 +906,8 @@ static int _snow_assert_buf(
 }
 
 __attribute__((unused))
-static int _snow_assert_fake() {
+static int _snow_assert_fake(int invert, ...) {
+	(void)invert;
 	return -1;
 }
 

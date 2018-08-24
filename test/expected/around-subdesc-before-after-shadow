@@ -5,8 +5,8 @@ E BEFORE
 E AFTER
 E BEFORE
 ✕ Failed:  failure:
-    Assertion failed: 0
-    in cases/around.c:e
+    Assertion failed: 0.
+    in cases/around.c:78(e)
 E AFTER
 
   Testing ee:
@@ -15,10 +15,10 @@ EE BEFORE
 EE AFTER
 EE BEFORE
   ✕ Failed:  failure:
-      Assertion failed: 0
-      in cases/around.c:ee
+      Assertion failed: 0.
+      in cases/around.c:87(e.ee)
 EE AFTER
-  ee: Passed 1/2 tests. (1.00s)
+  ee: Passed 1/2 tests. (4.00s)
 
-e: Passed 2/4 tests. (2.00s)
+e: Passed 2/4 tests. (9.00s)
 

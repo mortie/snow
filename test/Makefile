@@ -11,7 +11,7 @@ test-snow: test.c $(CASES) snow/snow.h
 	$(CC) -I. $(FLAGS)  -o $@ $<
 
 cases/%: cases/%.c ../snow/snow.h
-	$(CC) -I.. $(FLAGS) -o $@ $<
+	$(CC) -DSNOW_DUMMY_TIMER -I.. $(FLAGS) -o $@ $<
 
 test: test-snow
 	valgrind $(VGFLAGS) ./test-snow

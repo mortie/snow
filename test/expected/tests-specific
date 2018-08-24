@@ -2,14 +2,14 @@
 Testing a:
 ✓ Success: success (1.00s)
 ✕ Failed:  failure:
-    Assertion failed: 0
-    in cases/tests.c:a
-a: Passed 1/2 tests. (1.00s)
+    Assertion failed: 0.
+    in cases/tests.c:16(a)
+a: Passed 1/2 tests. (4.00s)
 
 Testing c:
 ✓ Success: success (1.00s)
 ✓ Success: success (1.00s)
-c: Passed 2/2 tests. (2.00s)
+c: Passed 2/2 tests. (5.00s)
 
-Total: Passed 3/4 tests. (3.00s)
+Total: Passed 3/4 tests. (14.00s)
 

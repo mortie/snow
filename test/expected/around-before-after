@@ -5,8 +5,8 @@ A BEFORE
 A AFTER
 A BEFORE
 ✕ Failed:  failure:
-    Assertion failed: 0
-    in cases/around.c:a
+    Assertion failed: 0.
+    in cases/around.c:22(a)
 A AFTER
-a: Passed 1/2 tests. (1.00s)
+a: Passed 1/2 tests. (4.00s)
 
