@@ -207,7 +207,7 @@ static char *_snow_spaces(int depth) {
 #ifndef SNOW_DUMMY_TIMER
 __attribute__((unused))
 static double _snow_now() {
-	if (_snow.opts[_SNOW_OPT_TIMER].boolval)
+	if (!_snow.opts[_SNOW_OPT_TIMER].boolval)
 		return 0;
 
 	struct timeval tv;
