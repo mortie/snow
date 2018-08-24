@@ -3,7 +3,7 @@ Testing b:
 ✓ Success: success (1.00s)
 ✕ Failed:  failure:
     Assertion failed: 0.
-    in cases/around.c:27(b)
+    in cases/around.c:16(b)
 
   Testing bb:
 BB BEFORE
@@ -12,7 +12,7 @@ BB AFTER
 BB BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0.
-      in cases/around.c:36(b.bb)
+      in cases/around.c:25(b.bb)
 BB AFTER
   bb: Passed 1/2 tests. (4.00s)
 

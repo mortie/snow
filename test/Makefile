@@ -14,7 +14,7 @@ cases/%: cases/%.c ../snow/snow.h
 	$(CC) -DSNOW_DUMMY_TIMER -I.. $(FLAGS) -o $@ $<
 
 test: test-snow
-	valgrind $(VGFLAGS) ./test-snow
+	valgrind $(VGFLAGS) ./test-snow $(ARGS)
 
 clean:
 	rm -f test-snow $(CASES)

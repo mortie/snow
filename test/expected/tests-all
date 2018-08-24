@@ -3,14 +3,14 @@ Testing a:
 ✓ Success: success (1.00s)
 ✕ Failed:  failure:
     Assertion failed: 0.
-    in cases/tests.c:16(a)
+    in cases/tests.c:5(a)
 a: Passed 1/2 tests. (4.00s)
 
 Testing b:
 ✓ Success: success (1.00s)
 ✕ Failed:  failure:
     Assertion failed: 0.
-    in cases/tests.c:21(b)
+    in cases/tests.c:10(b)
 b: Passed 1/2 tests. (4.00s)
 
 Testing c:
@@ -21,7 +21,7 @@ c: Passed 2/2 tests. (5.00s)
 Testing d:
 ✕ Failed:  failure:
     Assertion failed: 0.
-    in cases/tests.c:30(d)
+    in cases/tests.c:19(d)
 ✓ Success: success (1.00s)
 d: Passed 1/2 tests. (4.00s)
 

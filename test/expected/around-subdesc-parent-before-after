@@ -6,7 +6,7 @@ D AFTER
 D BEFORE
 ✕ Failed:  failure:
     Assertion failed: 0.
-    in cases/around.c:63(d)
+    in cases/around.c:52(d)
 D AFTER
 
   Testing dd:
@@ -16,7 +16,7 @@ D AFTER
 D BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0.
-      in cases/around.c:66(d.dd)
+      in cases/around.c:55(d.dd)
 D AFTER
   dd: Passed 1/2 tests. (4.00s)
 
