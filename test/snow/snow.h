@@ -17,7 +17,7 @@
 #include <fnmatch.h>
 #include <stdint.h>
 
-#define SNOW_VERSION "X"
+#define SNOW_VERSION "2.0.0-rc1"
 
 /*
  * Colors
