@@ -1,13 +1,5 @@
 #ifdef SNOW_ENABLED
 
-// TODO: Re-implement optional assertion explanations and
-// make this unnecessary
-#pragma GCC system_header
-#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
-
-// This is necessary unless I can avoid using `typeof`
-#pragma GCC diagnostic ignored "-Wlanguage-extension-token"
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,7 +9,15 @@
 #include <fnmatch.h>
 #include <stdint.h>
 
-#define SNOW_VERSION "2.0.0-rc1"
+#define SNOW_VERSION "2.0.0-rc2"
+
+// Eventually, I want to re-implement optional explanation arguments
+// for assert macros to make this unnecessary.
+#pragma GCC system_header
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
+// This is necessary unless I can avoid using `typeof`
+#pragma GCC diagnostic ignored "-Wlanguage-extension-token"
 
 /*
  * Colors
