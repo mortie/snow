@@ -180,6 +180,7 @@ struct _snow {
 
 	struct {
 		FILE *file;
+		int file_opened;
 		int need_cr;
 		enum {
 			_SNOW_PRINT_CASE,
@@ -676,6 +677,10 @@ static void _snow_usage(char *argv0)
 __attribute__((unused))
 static int snow_main_function(int argc, char **argv) {
 
+	// There might be no tests, so we should init _snow here too
+	if (!_snow_inited)
+		_snow_init();
+
 	/*
 	 * Parse arguments
 	 */
@@ -742,17 +747,20 @@ static int snow_main_function(int argc, char **argv) {
 		_snow.print.file = fopen(_snow.opts[_SNOW_OPT_LOG].strval, "w");
 		if (_snow.print.file == NULL) {
 			perror(_snow.opts[_SNOW_OPT_LOG].strval);
-			return EXIT_FAILURE;
+			_snow.exit_code = EXIT_FAILURE;
+			goto cleanup;
+		} else {
+			_snow.print.file_opened = 1;
 		}
 	}
 
 	// --help and --version
 	if (_snow.opts[_SNOW_OPT_HELP].boolval) {
 		_snow_usage(argv[0]);
-		return EXIT_SUCCESS;
+		goto cleanup;
 	} else if (_snow.opts[_SNOW_OPT_VERSION].boolval) {
 		_snow_print("Snow %s\n", SNOW_VERSION);
-		return EXIT_SUCCESS;
+		goto cleanup;
 	}
 
 	// Set context-dependent defaults
@@ -825,11 +833,14 @@ static int snow_main_function(int argc, char **argv) {
 	 * Cleanup
 	 */
 
+cleanup:
 	_snow_arr_reset(&_snow.desc_funcs);
 	_snow_arr_reset(&_snow.desc_stack);
 	_snow_arr_reset(&_snow.desc_patterns);
 	_snow_arr_reset(&_snow.current_case.defers);
 	_snow_arr_reset(&_snow.bufs.spaces);
+	if (_snow.print.file_opened)
+		fclose(_snow.print.file);
 
 	return _snow.exit_code;
 }
