@@ -54,7 +54,7 @@ describe(vector) {
 	vector vec;
 
 	it("breaks the rules of math (to demonstrate failed tests)") {
-		assert(1 == 2);
+		assert(1 == 2, "Oh noes!");
 	}
 
 	after_each() {

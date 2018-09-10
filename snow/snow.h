@@ -1,8 +1,12 @@
 #ifdef SNOW_ENABLED
 
 // TODO: Re-implement optional assertion explanations and
-// make system_header unnecessary
+// make this unnecessary
 #pragma GCC system_header
+#pragma GCC diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
+// This is necessary unless I can avoid using `typeof`
+#pragma GCC diagnostic ignored "-Wlanguage-extension-token"
 
 #include <string.h>
 #include <stdlib.h>
@@ -901,10 +905,10 @@ static int snow_main_function(int argc, char **argv) {
  * Assert
  */
 
-#define assert(x, ...) \
+#define assert(x, expl...) \
 	do { \
 		_snow_fail_update(); \
-		char *explanation = "" __VA_ARGS__; \
+		char *explanation = "" expl; \
 		if (!(x)) \
 			_snow_fail_expl(explanation, "Assertion failed: %s", #x); \
 	} while (0)
@@ -990,92 +994,92 @@ static int _snow_assert_fake(int invert, ...) {
  * Explicit asserteq macros
  */
 
-#define asserteq_dbl(a, b, ...) \
+#define asserteq_dbl(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_dbl( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define asserteq_ptr(a, b, ...) \
+#define asserteq_ptr(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_ptr( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define asserteq_str(a, b, ...) \
+#define asserteq_str(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_str( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define asserteq_int(a, b, ...) \
+#define asserteq_int(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_int( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define asserteq_uint(a, b, ...) \
+	#define asserteq_uint(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_uint( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b); \
+			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define asserteq_buf(a, b, size, ...) \
+#define asserteq_buf(a, b, size, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_buf( \
-			0, "" __VA_ARGS__, (a), #a, (b), #b, size); \
+			0, "" expl, (a), #a, (b), #b, size); \
 	} while (0)
 
 /*
  * Explicit assertneq macros
  */
 
-#define assertneq_dbl(a, b, ...) \
+#define assertneq_dbl(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_dbl( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b); \
+			1, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define assertneq_ptr(a, b, ...) \
+#define assertneq_ptr(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_ptr( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b); \
+			1, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define assertneq_str(a, b, ...) \
+#define assertneq_str(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_str( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b); \
+			1, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define assertneq_int(a, b, ...) \
+#define assertneq_int(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_int( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b); \
+			1, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define assertneq_uint(a, b, ...) \
+#define assertneq_uint(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_uint( \
-			2, "" __VA_ARGS__, (a), #a, (b), #b); \
+			2, "" expl, (a), #a, (b), #b); \
 	} while (0)
-#define assertneq_buf(a, b, size, ...) \
+#define assertneq_buf(a, b, size, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_buf( \
-			1, "" __VA_ARGS__, (a), #a, (b), #b, (size)); \
+			1, "" expl, (a), #a, (b), #b, (size)); \
 	} while (0)
 
 /*
  * Automatic asserteq
  */
 
-#define asserteq(a, b, ...) \
+#define asserteq(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
-		char *explanation = "" __VA_ARGS__; \
+		char *explanation = "" expl; \
 		int ret = _snow_generic_assert(b)( \
 			0, explanation, (a), #a, (b), #b); \
 		if (ret < 0) { \
@@ -1096,10 +1100,10 @@ static int _snow_assert_fake(int invert, ...) {
  * Automatic assertneq
  */
 
-#define assertneq(a, b, ...) \
+#define assertneq(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
-		char *explanation = "" __VA_ARGS__; \
+		char *explanation = "" expl; \
 		if (sizeof(a) != sizeof(b)) { \
 			break; \
 		} else { \
