@@ -1,5 +1,9 @@
 #ifdef SNOW_ENABLED
 
+// TODO: Re-implement optional assertion explanations and
+// make system_header unnecessary
+#pragma GCC system_header
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,8 +14,6 @@
 #include <stdint.h>
 
 #define SNOW_VERSION "X"
-
-#define SNOW_MAX_DEPTH 128
 
 /*
  * Colors
@@ -42,7 +44,7 @@
 
 struct _snow_arr {
 	size_t elem_size;
-	unsigned char *elems;
+	char *elems;
 	size_t length;
 	size_t allocated;
 };
@@ -57,7 +59,7 @@ static void _snow_arr_init(struct _snow_arr *arr, size_t size) {
 
 __attribute__((unused))
 static void _snow_arr_grow(struct _snow_arr *arr, size_t size) {
-	if (arr->allocated <= size)
+	if (arr->allocated >= size)
 		return;
 
 	arr->allocated = size;
@@ -184,7 +186,6 @@ struct _snow {
 
 	struct {
 		struct _snow_arr spaces;
-		struct _snow_arr desc_full_name;
 	} bufs;
 };
 
@@ -214,19 +215,17 @@ extern int _snow_inited;
  * Util
  */
 
-static char _snow_spaces_str[SNOW_MAX_DEPTH * 2 + 1];
-static int _snow_spaces_depth_prev = 0;
+static int _snow_spaces_depth_prev = -1;
 __attribute__((unused))
 static char *_snow_spaces(int depth) {
-	if (depth > SNOW_MAX_DEPTH)
-		depth = SNOW_MAX_DEPTH;
+	if (depth != _snow_spaces_depth_prev) {
+		_snow_arr_grow(&_snow.bufs.spaces, depth * 2 + 1);
+		_snow.bufs.spaces.elems[depth * 2] = '\0';
+		memset(_snow.bufs.spaces.elems, ' ', depth * 2);
+		_snow_spaces_depth_prev = depth;
+	}
 
-	_snow_spaces_str[depth * 2] = '\0';
-	if (depth > _snow_spaces_depth_prev)
-		memset(_snow_spaces_str, ' ', depth * 2);
-	_snow_spaces_depth_prev = depth;
-
-	return _snow_spaces_str;
+	return _snow.bufs.spaces.elems;
 }
 
 #ifndef SNOW_DUMMY_TIMER
@@ -442,6 +441,7 @@ static void _snow_init() {
 	_snow_arr_init(&_snow.desc_stack, sizeof(struct _snow_desc));
 	_snow_arr_init(&_snow.desc_patterns, sizeof(char *));
 	_snow_arr_init(&_snow.current_case.defers, sizeof(jmp_buf));
+	_snow_arr_init(&_snow.bufs.spaces, sizeof(char));
 	_snow.current_desc = NULL;
 
 	_snow_opt_boolt(_SNOW_OPT_VERSION, "version", 'v');
@@ -669,7 +669,7 @@ static void _snow_usage(char *argv0)
  * and cleans up.
  */
 __attribute__((unused))
-static int _snow_main(int argc, char **argv) {
+static int snow_main_function(int argc, char **argv) {
 	(void)argc;
 	(void)argv;
 
@@ -826,6 +826,7 @@ static int _snow_main(int argc, char **argv) {
 	_snow_arr_reset(&_snow.desc_stack);
 	_snow_arr_reset(&_snow.desc_patterns);
 	_snow_arr_reset(&_snow.current_case.defers);
+	_snow_arr_reset(&_snow.bufs.spaces);
 
 	return _snow.exit_code;
 }
@@ -892,8 +893,9 @@ static int _snow_main(int argc, char **argv) {
 	struct _snow _snow = { 0 }; \
 	int _snow_inited = 0; \
 	int main(int argc, char **argv) { \
-		return _snow_main(argc, argv); \
-	}
+		return snow_main_function(argc, argv); \
+	} \
+	int _snow_unused_variable_for_semicolon
 
 /*
  * Assert
