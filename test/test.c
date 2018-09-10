@@ -179,8 +179,8 @@ describe(asserts) {
 	}
 
 	test("asserteq") {
-		int results[8];
-		asserteq(getResults(f, results, 8), 8);
+		int results[12];
+		asserteq(getResults(f, results, 12), 12);
 
 		asserteq(results[0], SUCCESS);
 		asserteq(results[1], FAILURE);
@@ -193,11 +193,17 @@ describe(asserts) {
 
 		asserteq(results[6], SUCCESS);
 		asserteq(results[7], FAILURE);
+
+		asserteq(results[8], SUCCESS);
+		asserteq(results[9], FAILURE);
+
+		asserteq(results[10], SUCCESS);
+		asserteq(results[11], FAILURE);
 	}
 
 	test("assertneq") {
-		int results[8];
-		asserteq(getResults(f, results, 8), 8);
+		int results[12];
+		asserteq(getResults(f, results, 12), 12);
 
 		asserteq(results[0], FAILURE);
 		asserteq(results[1], SUCCESS);
@@ -210,6 +216,12 @@ describe(asserts) {
 
 		asserteq(results[6], FAILURE);
 		asserteq(results[7], SUCCESS);
+
+		asserteq(results[8], FAILURE);
+		asserteq(results[9], SUCCESS);
+
+		asserteq(results[10], FAILURE);
+		asserteq(results[11], SUCCESS);
 	}
 
 	pclose(f);

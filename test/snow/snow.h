@@ -9,7 +9,7 @@
 #include <fnmatch.h>
 #include <stdint.h>
 
-#define SNOW_VERSION "2.0.0-rc2"
+#define SNOW_VERSION "2.0.0-rc3"
 
 // Eventually, I want to re-implement optional explanation arguments
 // for assert macros to make this unnecessary.
@@ -1082,8 +1082,13 @@ static int _snow_assert_fake(int invert, ...) {
 		int ret = _snow_generic_assert(b)( \
 			0, explanation, (a), #a, (b), #b); \
 		if (ret < 0) { \
-			typeof (a) _a = a; \
-			typeof (b) _b = b; \
+			_Pragma("GCC diagnostic push") \
+			_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
+			_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+			_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
+			typeof ((a)+0) _a = a; \
+			typeof ((b)+0) _b = b; \
+			_Pragma("GCC diagnostic pop") \
 			if (sizeof(a) != sizeof(b)) { \
 				_snow_fail_expl(explanation, \
 					"Expected %s to equal %s, but their lengths don't match", \
@@ -1109,8 +1114,13 @@ static int _snow_assert_fake(int invert, ...) {
 			int ret = _snow_generic_assert(b)( \
 				1, explanation, (a), #a, (b), #b); \
 			if (ret < 0) { \
-				typeof (a) _a = a; \
-				typeof (b) _b = b; \
+				_Pragma("GCC diagnostic push") \
+				_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
+				_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+				_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
+				typeof ((a)+0) _a = a; \
+				typeof ((b)+0) _b = b; \
+				_Pragma("GCC diagnostic pop") \
 				if (sizeof(_a) != sizeof(_b)) { \
 					break; \
 				} else { \
