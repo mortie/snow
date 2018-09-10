@@ -9,8 +9,6 @@
 #include <fnmatch.h>
 #include <stdint.h>
 
-#pragma GCC diagnostic ignored "-Wpedantic"
-
 #define SNOW_VERSION "X"
 
 #define SNOW_MAX_DEPTH 128
@@ -49,6 +47,7 @@ struct _snow_arr {
 	size_t allocated;
 };
 
+__attribute__((unused))
 static void _snow_arr_init(struct _snow_arr *arr, size_t size) {
 	arr->elem_size = size;
 	arr->elems = NULL;
@@ -56,10 +55,21 @@ static void _snow_arr_init(struct _snow_arr *arr, size_t size) {
 	arr->allocated = 0;
 }
 
+__attribute__((unused))
+static void _snow_arr_grow(struct _snow_arr *arr, size_t size) {
+	if (arr->allocated <= size)
+		return;
+
+	arr->allocated = size;
+	arr->elems = realloc(arr->elems, arr->allocated * arr->elem_size);
+}
+
+__attribute__((unused))
 static void *_snow_arr_get(struct _snow_arr *arr, size_t index) {
 	return arr->elems + arr->elem_size * index;
 }
 
+__attribute__((unused))
 static void _snow_arr_push(struct _snow_arr *arr, void *elem) {
 	if (arr->allocated == 0) {
 		arr->allocated = 8;
@@ -73,16 +83,19 @@ static void _snow_arr_push(struct _snow_arr *arr, void *elem) {
 	arr->length += 1;
 }
 
+__attribute__((unused))
 static void *_snow_arr_pop(struct _snow_arr *arr) {
 	void *elem = _snow_arr_get(arr, arr->length - 1);
 	arr->length -= 1;
 	return elem;
 }
 
+__attribute__((unused))
 static void *_snow_arr_top(struct _snow_arr *arr) {
 	return _snow_arr_get(arr, arr->length - 1);
 }
 
+__attribute__((unused))
 static void _snow_arr_reset(struct _snow_arr *arr) {
 	free(arr->elems);
 	arr->elems = NULL;
@@ -126,6 +139,10 @@ struct _snow_desc {
 	int num_success;
 	int enabled;
 	int printed;
+	jmp_buf before_jmp;
+	int has_before_jmp;
+	jmp_buf after_jmp;
+	int has_after_jmp;
 };
 
 struct _snow_desc_func {
@@ -149,8 +166,10 @@ struct _snow {
 		const char *name;
 		double start_time;
 		struct _snow_arr defers;
-		jmp_buf done_jmp;
-		jmp_buf defer_jmp;
+		jmp_buf done_jmp_ret;
+		jmp_buf defer_jmp_ret;
+		jmp_buf before_jmp_ret;
+		jmp_buf after_jmp_ret;
 	} current_case;
 
 	struct {
@@ -162,6 +181,11 @@ struct _snow {
 			_SNOW_PRINT_DESC_END,
 		} prev_print;
 	} print;
+
+	struct {
+		struct _snow_arr spaces;
+		struct _snow_arr desc_full_name;
+	} bufs;
 };
 
 /*
@@ -192,6 +216,7 @@ extern int _snow_inited;
 
 static char _snow_spaces_str[SNOW_MAX_DEPTH * 2 + 1];
 static int _snow_spaces_depth_prev = 0;
+__attribute__((unused))
 static char *_snow_spaces(int depth) {
 	if (depth > SNOW_MAX_DEPTH)
 		depth = SNOW_MAX_DEPTH;
@@ -409,14 +434,6 @@ static void _snow_print_desc_end() {
 		_snow.linenum = __LINE__; \
 	} while (0)
 
-/*
- * Default _snow_before_each and _snow_after_each functions
- * which just do nothing.
- */
-
-__attribute__((unused)) static void _snow_before_each() {}
-__attribute__((unused)) static void _snow_after_each() {}
-
 __attribute__((unused))
 static void _snow_init() {
 	_snow_inited = 1;
@@ -461,6 +478,12 @@ static void _snow_desc_begin(const char *name) {
 		strcpy(desc.full_name, parent_desc->full_name);
 		strcpy(desc.full_name + parent_desc->full_name_len, ".");
 		strcpy(desc.full_name + parent_desc->full_name_len + 1, name);
+		desc.has_before_jmp = parent_desc->has_before_jmp;
+		if (desc.has_before_jmp)
+			memcpy(desc.before_jmp, parent_desc->before_jmp, sizeof(parent_desc->before_jmp));
+		desc.has_after_jmp = parent_desc->has_after_jmp;
+		if (desc.has_after_jmp)
+			memcpy(desc.after_jmp, parent_desc->after_jmp, sizeof(parent_desc->after_jmp));
 	}
 
 	// Check if desc is enabled
@@ -515,7 +538,7 @@ static void _snow_desc_end() {
  * Begin a test case. It has to be a macro, not a function, because
  * longjmp can't jump to setjmps from a function call which has returned.
  */
-#define _snow_case_begin(casename, before, after) \
+#define _snow_case_begin(casename) \
 	do { \
 		if (!_snow.current_desc->enabled) break; \
 		if (!_snow.current_desc->printed) _snow_print_desc_begin(); \
@@ -525,17 +548,23 @@ static void _snow_desc_end() {
 		_snow_arr_reset(&_snow.current_case.defers); \
 		_snow_print_case_begin(); \
 		_snow.current_desc->num_tests += 1; \
-		before(); \
+		if (_snow.current_desc->has_before_jmp) { \
+			if (setjmp(_snow.current_case.before_jmp_ret) == 0) \
+				longjmp(_snow.current_desc->before_jmp, 1); \
+		} \
 		/* Set jump point which _snow_case_end */ \
 		/* (and each defer) will jump back to */ \
-		if (setjmp(_snow.current_case.done_jmp) == 1) { \
+		if (setjmp(_snow.current_case.done_jmp_ret) == 1) { \
 			while (_snow.current_case.defers.length > 0) { \
-				if (setjmp(_snow.current_case.defer_jmp) == 0) { \
+				if (setjmp(_snow.current_case.defer_jmp_ret) == 0) { \
 					jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers); \
 					longjmp(*jmp, 1); \
 				} \
 			} \
-			after(); \
+			if (_snow.current_desc->has_after_jmp) { \
+				if (setjmp(_snow.current_case.after_jmp_ret) == 0) \
+					longjmp(_snow.current_desc->after_jmp, 1); \
+			} \
 		} \
 	} while (0)
 
@@ -555,7 +584,7 @@ static void _snow_case_end(int success) {
 		_snow.exit_code = EXIT_FAILURE;
 	}
 
-	longjmp(_snow.current_case.done_jmp, 1);
+	longjmp(_snow.current_case.done_jmp_ret, 1);
 }
 
 /*
@@ -573,7 +602,25 @@ static void _snow_case_defer_push(jmp_buf jmp) {
  */
 __attribute__((unused))
 static void _snow_case_defer_jmp() {
-	longjmp(_snow.current_case.defer_jmp, 1);
+	longjmp(_snow.current_case.defer_jmp_ret, 1);
+}
+
+/*
+ * Called when a before_each is done.
+ * Will jump back to _snow_case_begin.
+ */
+__attribute__((unused))
+static void _snow_before_each_end() {
+	longjmp(_snow.current_case.before_jmp_ret, 1);
+}
+
+/*
+ * Called when a after_each is done.
+ * Will jump back to _snow_case_begin.
+ */
+__attribute__((unused))
+static void _snow_after_each_end() {
+	longjmp(_snow.current_case.after_jmp_ret, 1);
 }
 
 /*
@@ -706,7 +753,7 @@ static int _snow_main(int argc, char **argv) {
 	}
 
 	// Set context-dependent defaults
-	// (the dumb defaults were set in the snow_main macro)
+	// (the context-independent defaults were set in the snow_main macro)
 	int is_tty = isatty(fileno(_snow.print.file));
 	if (is_tty) {
 		_snow_opt_default(_SNOW_OPT_COLOR, 1);
@@ -803,7 +850,7 @@ static int _snow_main(int argc, char **argv) {
 		(_snow_desc_done = 1, _snow_desc_end()))
 
 #define it(name) \
-	_snow_case_begin(name, _snow_before_each, _snow_after_each); \
+	_snow_case_begin(name); \
 	for (; _snow.in_case; _snow_case_end(1))
 #define test it
 
@@ -819,9 +866,21 @@ static int _snow_main(int argc, char **argv) {
 	} while (0)
 
 #define before_each() \
-	void _snow_before_each()
+	_snow.current_desc->has_before_jmp = 1; \
+	int _snow_run_before_each = setjmp(_snow.current_desc->before_jmp); \
+	for ( \
+		int _snow_before_each_done = 0; \
+		_snow_before_each_done == 0 && _snow_run_before_each; \
+		(_snow_before_each_done = 1, _snow_before_each_end()))
+
 #define after_each() \
-	void _snow_after_each()
+	_snow.current_desc->has_after_jmp = 1; \
+	int _snow_run_after_each = setjmp(_snow.current_desc->after_jmp); \
+	for ( \
+		int _snow_after_each_done = 0; \
+		_snow_after_each_done == 0 && _snow_run_after_each; \
+		(_snow_after_each_done = 1, _snow_after_each_end()))
+
 
 #define fail(...) \
 	do { \
@@ -870,7 +929,7 @@ static int _snow_main(int argc, char **argv) {
 	}
 _snow_define_assertfunc(int, intmax_t, "%ji")
 _snow_define_assertfunc(uint, uintmax_t, "%ju")
-_snow_define_assertfunc(dbl, double, "%g")
+_snow_define_assertfunc(dbl, long double, "%Lg")
 _snow_define_assertfunc(ptr, void *, "%p")
 
 __attribute__((unused))
@@ -915,6 +974,7 @@ static int _snow_assert_fake(int invert, ...) {
 	_Generic((x), \
 		float: _snow_assert_dbl, \
 		double: _snow_assert_dbl, \
+		long double: _snow_assert_dbl, \
 		void *: _snow_assert_ptr, \
 		char *: _snow_assert_str, \
 		int: _snow_assert_int, \
