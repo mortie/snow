@@ -440,6 +440,7 @@ static void _snow_print_desc_end() {
 __attribute__((unused))
 static void _snow_init() {
 	_snow_inited = 1;
+	memset(&_snow, 0, sizeof(_snow));
 	_snow.exit_code = EXIT_SUCCESS;
 	_snow_arr_init(&_snow.desc_funcs, sizeof(struct _snow_desc_func));
 	_snow_arr_init(&_snow.desc_stack, sizeof(struct _snow_desc));
@@ -674,8 +675,6 @@ static void _snow_usage(char *argv0)
  */
 __attribute__((unused))
 static int snow_main_function(int argc, char **argv) {
-	(void)argc;
-	(void)argv;
 
 	/*
 	 * Parse arguments
@@ -894,7 +893,7 @@ static int snow_main_function(int argc, char **argv) {
 	} while (0)
 
 #define snow_main() \
-	struct _snow _snow = { 0 }; \
+	struct _snow _snow; \
 	int _snow_inited = 0; \
 	int main(int argc, char **argv) { \
 		return snow_main_function(argc, argv); \
