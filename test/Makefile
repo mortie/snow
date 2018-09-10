@@ -1,7 +1,7 @@
 CASESRC = $(shell find cases -name "*.c")
 CASES = $(patsubst %.c,%,$(CASESRC))
 
-CFLAGS ?= -g -Wall -Wextra -Wpedantic -Werror
+CFLAGS ?= -g -Wall -Wextra -Wpedantic -std=gnu11
 FLAGS = $(CFLAGS) -DSNOW_ENABLED
 VGFLAGS ?= \
 	--quiet --leak-check=full --show-leak-kinds=all \
