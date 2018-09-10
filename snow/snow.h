@@ -1,4 +1,31 @@
-#ifdef SNOW_ENABLED
+#ifndef SNOW_ENABLED
+
+#define describe(name) __attribute__((unused)) static void _snow_unused_##name()
+#define subdesc(...) while (0)
+#define it(...) while (0)
+#define defer(...)
+#define before_each(...) while (0)
+#define after_each(...) while (0)
+#define fail(...)
+#define assert(...)
+
+#define asserteq_dbl(...)
+#define asserteq_ptr(...)
+#define asserteq_str(...)
+#define asserteq_int(...)
+#define asserteq_uint(...)
+#define asserteq_buf(...)
+#define asserteq(...)
+
+#define assertneq_dbl(...)
+#define assertneq_ptr(...)
+#define assertneq_str(...)
+#define assertneq_int(...)
+#define assertneq_uint(...)
+#define assertneq_buf(...)
+#define assertneq(...)
+
+#else
 
 #include <string.h>
 #include <stdlib.h>
@@ -896,7 +923,6 @@ cleanup:
 		_snow_after_each_done == 0 && _snow_run_after_each; \
 		(_snow_after_each_done = 1, _snow_after_each_end()))
 
-
 #define fail(...) \
 	do { \
 		_snow_fail_update(); \
@@ -1028,7 +1054,7 @@ static int _snow_assert_fake(int invert, ...) {
 		_snow_assert_int( \
 			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-	#define asserteq_uint(a, b, expl...) \
+#define asserteq_uint(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_uint( \

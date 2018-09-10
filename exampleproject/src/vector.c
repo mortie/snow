@@ -48,7 +48,6 @@ void *vector_get(vector *vec, size_t idx)
 	return ptr;
 }
 
-#ifdef SNOW_ENABLED
 #include <snow/snow.h>
 
 describe(vector) {
@@ -114,5 +113,3 @@ describe(vector) {
 		}
 	}
 }
-
-#endif
