@@ -1066,6 +1066,26 @@ static int _snow_assert_fake(int invert, ...) {
 		_snow_assert_buf( \
 			0, "" expl, (a), #a, (b), #b, size); \
 	} while (0)
+#define asserteq_any(a, b, expl...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" expl; \
+		_Pragma("GCC diagnostic push") \
+		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
+		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+		_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
+		typeof ((a)+0) _a = a; \
+		typeof ((b)+0) _b = b; \
+		_Pragma("GCC diagnostic pop") \
+		if (sizeof(a) != sizeof(b)) { \
+			_snow_fail_expl(explanation, \
+				"Expected %s to equal %s, but their lengths don't match", \
+				#a, #b); \
+		} else { \
+			_snow_assert_buf( \
+				0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+		} \
+	} while (0)
 
 /*
  * Explicit assertneq macros
@@ -1107,6 +1127,24 @@ static int _snow_assert_fake(int invert, ...) {
 		_snow_assert_buf( \
 			1, "" expl, (a), #a, (b), #b, (size)); \
 	} while (0)
+#define assertneq_any(a, b, expl...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" expl; \
+		_Pragma("GCC diagnostic push") \
+		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
+		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+		_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
+		typeof ((a)+0) _a = a; \
+		typeof ((b)+0) _b = b; \
+		_Pragma("GCC diagnostic pop") \
+		if (sizeof(_a) != sizeof(_b)) { \
+			break; \
+		} else { \
+			_snow_assert_buf( \
+				1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+		} \
+	} while (0)
 
 /*
  * Automatic asserteq
@@ -1119,21 +1157,7 @@ static int _snow_assert_fake(int invert, ...) {
 		int ret = _snow_generic_assert(b)( \
 			0, explanation, (a), #a, (b), #b); \
 		if (ret < 0) { \
-			_Pragma("GCC diagnostic push") \
-			_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
-			_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
-			_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
-			typeof ((a)+0) _a = a; \
-			typeof ((b)+0) _b = b; \
-			_Pragma("GCC diagnostic pop") \
-			if (sizeof(a) != sizeof(b)) { \
-				_snow_fail_expl(explanation, \
-					"Expected %s to equal %s, but their lengths don't match", \
-					#a, #b); \
-			} else { \
-				_snow_assert_buf( \
-					0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
-			} \
+			asserteq_any(a, b, expl); \
 		} \
 	} while (0)
 
@@ -1145,26 +1169,10 @@ static int _snow_assert_fake(int invert, ...) {
 	do { \
 		_snow_fail_update(); \
 		char *explanation = "" expl; \
-		if (sizeof(a) != sizeof(b)) { \
-			break; \
-		} else { \
-			int ret = _snow_generic_assert(b)( \
-				1, explanation, (a), #a, (b), #b); \
-			if (ret < 0) { \
-				_Pragma("GCC diagnostic push") \
-				_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
-				_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
-				_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
-				typeof ((a)+0) _a = a; \
-				typeof ((b)+0) _b = b; \
-				_Pragma("GCC diagnostic pop") \
-				if (sizeof(_a) != sizeof(_b)) { \
-					break; \
-				} else { \
-					_snow_assert_buf( \
-						1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
-				} \
-			} \
+		int ret = _snow_generic_assert(b)( \
+			1, explanation, (a), #a, (b), #b); \
+		if (ret < 0) { \
+			assertneq_any(a, b, expl); \
 		} \
 } while (0)
 
