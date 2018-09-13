@@ -67,14 +67,14 @@ subdescription for testing fread-related stuff.
 #include <stdio.h>
 #include <snow/snow.h>
 
-describe(files, {
-	it("opens files", {
+describe(files) {
+	it("opens files") {
 		FILE *f = fopen("test", "r");
 		assertneq(f, NULL);
 		defer(fclose(f));
-	});
+	}
 
-	it("writes to files", {
+	it("writes to files") {
 		FILE *f = fopen("testfile", "w");
 		assertneq(f, NULL);
 		defer(remove("testfile"));
@@ -82,46 +82,46 @@ describe(files, {
 
 		char str[] = "hello there";
 		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
-	});
+	}
 
-	subdesc(fread, {
-		it("reads 10 bytes", {
+	subdesc(fread) {
+		it("reads 10 bytes") {
 			FILE *f = fopen("/dev/zero", "r");
 			assertneq(f, NULL);
 			defer(fclose(f));
 
 			char buf[10];
 			asserteq(fread(buf, 1, 10, f), 10);
-		});
+		}
 
-		it("reads 20 bytes", {
+		it("reads 20 bytes") {
 			FILE *f = fopen("/dev/zero", "r");
 			assertneq(f, NULL);
 			defer(fclose(f));
 
 			char buf[20];
 			asserteq(fread(buf, 1, 20, f), 20);
-		});
-	});
-});
+		}
+	}
+}
 
 snow_main();
 ```
 
 ## Structure Macros
 
-### describe(testname, block)
+### describe(testname) \<block>
 
 A top-level description of a component, which can contain `subdesc`s and `it`s.
 A `describe(testname, block)` will define a function `void test_##testname()`,
 which the main function created by `snow_main` will call automatically.
 
-### subdesc(testname, block)
+### subdesc(testname) \<block>
 
 A description of a sub-component, which can contain nested `subdesc`s and
 `it`s. It's similar to `describe`, but doesn't define a function.
 
-### it(description, block)
+### it(description) \<block>
 
 A particular test case. It can contain asserts and `defer`s, as well as just
 regular code. A failing assert (or direct call to `fail(...)`) will mark the
@@ -137,11 +137,11 @@ reverse order of their definitions (i.e `defer(printf("World"));
 defer(printf("Hello "));` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
-### before_each(block)
+### before\_each() \<block>
 
 Code to run before each test case.
 
-### after_each(block)
+### after\_each() \<block>
 
 Code to run after each test case.
 
@@ -158,11 +158,13 @@ automatically be called by the main functions.
 Just directly fail the test case. The arguments are a printf-style format,
 optionally followed by arguments, just like `printf`.
 
-### assert(x)
+### assert(x [, explanation])
 
-Fail if the expression `x` returns 0.
+Fail if the expression `x` returns 0. `explanation`  is an optional string
+which will be printed if the assertion fails, and can be used to provide some
+context.
 
-### asserteq(a, b)
+### asserteq(a, b [, explanation])
 
 Fail unless `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
@@ -173,7 +175,7 @@ If you can't use C11, or want to explicitly state what type your arguments are
 can use the `asserteq_int`, `asserteq_ptr`, `asserteq_dbl`, and `asserteq_str`
 macros instead of `asserteq`.
 
-### assertneq(a, b)
+### assertneq(a, b [, explanation])
 
 Fail if `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
@@ -184,11 +186,11 @@ If you can't use C11, or want to explicitly state what type your arguments are
 can use the `assertneq_int`, `assertneq_ptr`, `assertneq_dbl`, and `asserteq_str`
 macros instead of `assertneq`.
 
-### asserteq\_buf(a, b, n)
+### asserteq\_buf(a, b, n [, explanation])
 
 Fail unless the first `n` bytes of `a` and `b` are the same.
 
-### assertneq\_buf(a, b, n)
+### assertneq\_buf(a, b, n [, explanation])
 
 Fail if the first `n` bytes of `a` and `b` are the same.
 
