@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <sys/wait.h>
 
 // This is relatively horrible and does no escaping,
 // so make sure that 'str' doesn't contain a single quote, k?
