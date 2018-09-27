@@ -73,7 +73,7 @@
 #include <fnmatch.h>
 #endif
 
-#define SNOW_VERSION "2.0.0-rc3"
+#define SNOW_VERSION "2.0.0"
 
 // Eventually, I want to re-implement optional explanation arguments
 // for assert macros to make this unnecessary.

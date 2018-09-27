@@ -3,7 +3,7 @@
 # Snow
 
 Snow is a header-only unit testing library for C. Just include the file
-[snow/snow.h](https://github.com/mortie/snow/blob/v1.4.0/snow/snow.h).
+[snow/snow.h](https://github.com/mortie/snow/blob/v2.0.0/snow/snow.h).
 
 IRC channel: [#snow](http://webchat.freenode.net?channels=snow) on Freenode.
 If you have any questions, or just want to chat, just ping me (@mort) :)
@@ -19,12 +19,12 @@ Snow 2 is a complete rewrite of Snow. Here are the highlights:
 	`describe`, `subdesc`, `it`/`test`, `before_each`, and `after_each`.
 	* This means that it's possible to show line numbers, that compiler error
 	  messages are nicer, and syntax highlighters and auto indenters should be
-		more happy.
+	  more happy.
 * `asserteq` and `assertneq` works slightly differently, but most code which
   worked before should continue to work.
 * All assertion macros have gotten an extra, optional argument, which is an
   explanation of what the assertion means. For example, you can now write
-	`asserteq(foo, bar, "Some explanation")`.
+  `asserteq(foo, bar, "Some explanation")`.
 * You can select what tests to run with glob-style matches, not just filter
   based on the name of the top-level describe.
 
@@ -42,7 +42,7 @@ Some miscellaneous points:
   characters. (Git Bash and Cygwin's terminal should be fine though)
 	* Windows also generally doesn't have the `<fnmatch.h>` header. You can compile
 	  your tests with `-DSNOW_USE_FNMATCH=0` to disable fnmatch, or install
-		[Gnulib](https://www.gnu.org/software/gnulib/) in Cygwin.
+	  [Gnulib](https://www.gnu.org/software/gnulib/) in Cygwin.
 * I really recommend running the test executable with
   [valgrind](http://valgrind.org/). That will help you find memory issues such
   as memory leaks, out of bounds array reads/writes, etc.
