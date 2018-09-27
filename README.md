@@ -132,7 +132,7 @@ snow_main();
 ## Compile options
 
 * **SNOW\_ENABLED**: Define to enable Snow.
-* **SNOW\_USE\_FNMATCH**": Set to 0 to not use fnmatch for test name
+* **SNOW\_USE\_FNMATCH**: Set to 0 to not use fnmatch for test name
   matching, and instead just compare literal strings. (Useful for systems
   without fnmatch)
 * **SNOW\_COLOR\_SUCCESS**: The escape sequence before printing success.
@@ -229,7 +229,7 @@ Fail unless the first `n` bytes of `a` and `b` are the same.
 
 Fail if the first `n` bytes of `a` and `b` are the same.
 
-### snow_fail(fmt, ...), snow_fail_update()
+### snow\_fail(fmt, ...), snow\_fail\_update()
 
 `snow_fail_update` saves the current file/line, while `snow_fail` fails the
 currently executing test case and prints the saved file/line from the last
@@ -267,17 +267,3 @@ avoid name conflicts.
 
 The [exampleproject](https://github.com/mortie/snow/blob/master/exampleproject)
 directory is an example of a program tested this way.
-
-## Defines
-
-* **SNOW\_ENABLED**: Enable Snow. If this macro isn't defined, `describe(...)`
-  will be defined as an empty macro and nothing else will be defined.
-* **SNOW\_KEEP\_WARNINGS**: By default, the warnings -Wpedantic,
-  -Wpointer-arith, and -Wint-conversion will be ignored after the inclusion
-  of `snow.h`. By defining this macro, no warnings will be disabled.
-* Colors
-	* **SNOW\_COLOR\_SUCCESS**: The color for "✓ Success".
-	* **SNOW\_COLOR\_FAIL**: The color for "✕ Failed".
-	* **SNOW\_COLOR\_DESC**: The color for test descriptions.
-	* **SNOW\_COLOR\_MAYBE**: The color for "? Testing" (the temporary lines
-	  printed before a test case has succeeded or failed).
