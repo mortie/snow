@@ -208,6 +208,14 @@ Fail unless the first `n` bytes of `a` and `b` are the same.
 
 Fail if the first `n` bytes of `a` and `b` are the same.
 
+### snow_fail(fmt, ...), snow_fail_update()
+
+`snow_fail_update` saves the current file/line, while `snow_fail` fails the
+currently executing test case and prints the saved file/line from the last
+`snow_fail_update`. This allows for implementing new checks to fail tests.
+All assertion functions from Snow are implemented using `snow_fail` and
+`snow_fail_update`.
+
 ## How to test
 
 Exactly how to test your code might not be as obvious with C as it is for other
