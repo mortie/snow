@@ -4,8 +4,8 @@ C BEFORE
 ✓ Success: success (1.00s)
 C BEFORE
 ✕ Failed:  failure:
-    Assertion failed: 0
-    in cases/around.c:c
+    Assertion failed: 0.
+    in cases/around.c:34(c)
 
   Testing cc:
 C BEFORE
@@ -13,10 +13,10 @@ C BEFORE
 CC AFTER
 C BEFORE
   ✕ Failed:  failure:
-      Assertion failed: 0
-      in cases/around.c:cc
+      Assertion failed: 0.
+      in cases/around.c:40(c.cc)
 CC AFTER
-  cc: Passed 1/2 tests. (1.00s)
+  cc: Passed 1/2 tests. (4.00s)
 
-c: Passed 2/4 tests. (2.00s)
+c: Passed 2/4 tests. (9.00s)
 

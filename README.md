@@ -3,12 +3,30 @@
 # Snow
 
 Snow is a header-only unit testing library for C. Just include the file
-[snow/snow.h](https://github.com/mortie/snow/blob/v1.4.0/snow/snow.h).
+[snow/snow.h](https://github.com/mortie/snow/blob/v2.0.0/snow/snow.h).
 
 IRC channel: [#snow](http://webchat.freenode.net?channels=snow) on Freenode.
 If you have any questions, or just want to chat, just ping me (@mort) :)
 
 ![Screenshot](https://raw.githubusercontent.com/mortie/snow/master/img/screenshot.png)
+
+## Snow 2
+
+Snow 2 is a complete rewrite of Snow. Here are the highlights:
+
+* Blocks have moved from inside of macro arguments (i.e `describe(foo, { ... })`)
+  to outside of macro arguments (i.e `describe(foo) { ... }`). This applies to
+	`describe`, `subdesc`, `it`/`test`, `before_each`, and `after_each`.
+	* This means that it's possible to show line numbers, that compiler error
+	  messages are nicer, and syntax highlighters and auto indenters should be
+	  more happy.
+* `asserteq` and `assertneq` works slightly differently, but most code which
+  worked before should continue to work.
+* All assertion macros have gotten an extra, optional argument, which is an
+  explanation of what the assertion means. For example, you can now write
+  `asserteq(foo, bar, "Some explanation")`.
+* You can select what tests to run with glob-style matches, not just filter
+  based on the name of the top-level describe.
 
 ## About
 
@@ -19,9 +37,12 @@ Some miscellaneous points:
   Clang. It should even work on GCC and Clang versions too old to support C11
   (or even C99), but the convenience `asserteq` and `assertneq` macros require
   C11.
-* Windows is supported through MinGW, with the caveat that it assumes your
-  terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
-  characters. Color is also disabled on Windows.
+* Windows is supported through MinGW or cygwin, with the caveat that it assumes
+  your terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
+  characters. (Git Bash and Cygwin's terminal should be fine though)
+	* Windows also generally doesn't have the `<fnmatch.h>` header. You can compile
+	  your tests with `-DSNOW_USE_FNMATCH=0` to disable fnmatch, or install
+	  [Gnulib](https://www.gnu.org/software/gnulib/) in Cygwin.
 * I really recommend running the test executable with
   [valgrind](http://valgrind.org/). That will help you find memory issues such
   as memory leaks, out of bounds array reads/writes, etc.
@@ -67,14 +88,14 @@ subdescription for testing fread-related stuff.
 #include <stdio.h>
 #include <snow/snow.h>
 
-describe(files, {
-	it("opens files", {
+describe(files) {
+	it("opens files") {
 		FILE *f = fopen("test", "r");
 		assertneq(f, NULL);
 		defer(fclose(f));
-	});
+	}
 
-	it("writes to files", {
+	it("writes to files") {
 		FILE *f = fopen("testfile", "w");
 		assertneq(f, NULL);
 		defer(remove("testfile"));
@@ -82,46 +103,60 @@ describe(files, {
 
 		char str[] = "hello there";
 		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
-	});
+	}
 
-	subdesc(fread, {
-		it("reads 10 bytes", {
+	subdesc(fread) {
+		it("reads 10 bytes") {
 			FILE *f = fopen("/dev/zero", "r");
 			assertneq(f, NULL);
 			defer(fclose(f));
 
 			char buf[10];
 			asserteq(fread(buf, 1, 10, f), 10);
-		});
+		}
 
-		it("reads 20 bytes", {
+		it("reads 20 bytes") {
 			FILE *f = fopen("/dev/zero", "r");
 			assertneq(f, NULL);
 			defer(fclose(f));
 
 			char buf[20];
 			asserteq(fread(buf, 1, 20, f), 20);
-		});
-	});
-});
+		}
+	}
+}
 
 snow_main();
 ```
 
+## Compile options
+
+* **SNOW\_ENABLED**: Define to enable Snow.
+* **SNOW\_USE\_FNMATCH**: Set to 0 to not use fnmatch for test name
+  matching, and instead just compare literal strings. (Useful for systems
+  without fnmatch)
+* **SNOW\_COLOR\_SUCCESS**: The escape sequence before printing success.
+* **SNOW\_COLOR\_FAIL**: The escape sequence before printing failure.
+* **SNOW\_COLOR\_MAYBE**: The escape sequence before printing maybes.
+* **SNOW\_COLOR\_DESC**: The escape sequence before printing the test
+  description.
+* **SNOW\_COLOR\_BOLD**: The escape sequence for bold text.
+* **SNOW\_COLOR\_RESET**: The escape sequence to reset formatting.
+
 ## Structure Macros
 
-### describe(testname, block)
+### describe(testname) \<block>
 
 A top-level description of a component, which can contain `subdesc`s and `it`s.
 A `describe(testname, block)` will define a function `void test_##testname()`,
 which the main function created by `snow_main` will call automatically.
 
-### subdesc(testname, block)
+### subdesc(testname) \<block>
 
 A description of a sub-component, which can contain nested `subdesc`s and
 `it`s. It's similar to `describe`, but doesn't define a function.
 
-### it(description, block)
+### it(description) \<block>
 
 A particular test case. It can contain asserts and `defer`s, as well as just
 regular code. A failing assert (or direct call to `fail(...)`) will mark the
@@ -137,11 +172,11 @@ reverse order of their definitions (i.e `defer(printf("World"));
 defer(printf("Hello "));` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
-### before_each(block)
+### before\_each() \<block>
 
 Code to run before each test case.
 
-### after_each(block)
+### after\_each() \<block>
 
 Code to run after each test case.
 
@@ -158,11 +193,13 @@ automatically be called by the main functions.
 Just directly fail the test case. The arguments are a printf-style format,
 optionally followed by arguments, just like `printf`.
 
-### assert(x)
+### assert(x [, explanation])
 
-Fail if the expression `x` returns 0.
+Fail if the expression `x` returns 0. `explanation`  is an optional string
+which will be printed if the assertion fails, and can be used to provide some
+context.
 
-### asserteq(a, b)
+### asserteq(a, b [, explanation])
 
 Fail unless `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
@@ -173,7 +210,7 @@ If you can't use C11, or want to explicitly state what type your arguments are
 can use the `asserteq_int`, `asserteq_ptr`, `asserteq_dbl`, and `asserteq_str`
 macros instead of `asserteq`.
 
-### assertneq(a, b)
+### assertneq(a, b [, explanation])
 
 Fail if `a` equals `b`. If `b` is a string, `strcmp` will be used to check
 for equality; otherwise, `==` will be used.
@@ -184,13 +221,21 @@ If you can't use C11, or want to explicitly state what type your arguments are
 can use the `assertneq_int`, `assertneq_ptr`, `assertneq_dbl`, and `asserteq_str`
 macros instead of `assertneq`.
 
-### asserteq\_buf(a, b, n)
+### asserteq\_buf(a, b, n [, explanation])
 
 Fail unless the first `n` bytes of `a` and `b` are the same.
 
-### assertneq\_buf(a, b, n)
+### assertneq\_buf(a, b, n [, explanation])
 
 Fail if the first `n` bytes of `a` and `b` are the same.
+
+### snow\_fail(fmt, ...), snow\_fail\_update()
+
+`snow_fail_update` saves the current file/line, while `snow_fail` fails the
+currently executing test case and prints the saved file/line from the last
+`snow_fail_update`. This allows for implementing new checks to fail tests.
+All assertion functions from Snow are implemented using `snow_fail` and
+`snow_fail_update`.
 
 ## How to test
 
@@ -222,17 +267,3 @@ avoid name conflicts.
 
 The [exampleproject](https://github.com/mortie/snow/blob/master/exampleproject)
 directory is an example of a program tested this way.
-
-## Defines
-
-* **SNOW\_ENABLED**: Enable Snow. If this macro isn't defined, `describe(...)`
-  will be defined as an empty macro and nothing else will be defined.
-* **SNOW\_KEEP\_WARNINGS**: By default, the warnings -Wpedantic,
-  -Wpointer-arith, and -Wint-conversion will be ignored after the inclusion
-  of `snow.h`. By defining this macro, no warnings will be disabled.
-* Colors
-	* **SNOW\_COLOR\_SUCCESS**: The color for "✓ Success".
-	* **SNOW\_COLOR\_FAIL**: The color for "✕ Failed".
-	* **SNOW\_COLOR\_DESC**: The color for test descriptions.
-	* **SNOW\_COLOR\_MAYBE**: The color for "? Testing" (the temporary lines
-	  printed before a test case has succeeded or failed).

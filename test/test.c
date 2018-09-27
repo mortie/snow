@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#ifndef __MINGW32__
+#include <sys/wait.h>
+#endif
+
 // This is relatively horrible and does no escaping,
 // so make sure that 'str' doesn't contain a single quote, k?
 // It's here because we want to use sh even on Windows under mingw.
@@ -121,18 +125,13 @@ static int compareOutput(char *cmd, char *expected)
 #define NEQ_FAILURE 3
 #define TEST_WORKED 4
 
-#ifndef __MINGW32__
-#define NO_MINGW(...)
-#else
-#define NO_MINGW(...) __VA_ARGS__
-#endif
-
 #include <snow/snow.h>
 
-describe(asserts, {
+#ifdef SNOW_ENABLED
+describe(asserts) {
 	FILE *f = runcmd("./cases/asserts");
 
-	test("asserteq_int, assertneq_int", {
+	test("asserteq_int, assertneq_int") {
 		int results[4];
 		asserteq(getResults(f, results, 4), 4);
 
@@ -140,9 +139,9 @@ describe(asserts, {
 		asserteq(results[EQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_FAILURE], FAILURE);
-	});
+	}
 
-	test("asserteq_dbl, assertneq_dbl", {
+	test("asserteq_dbl, assertneq_dbl") {
 		int results[4];
 		asserteq(getResults(f, results, 4), 4);
 
@@ -150,9 +149,9 @@ describe(asserts, {
 		asserteq(results[EQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_FAILURE], FAILURE);
-	});
+	}
 
-	test("asserteq_ptr, assertneq_str", {
+	test("asserteq_ptr, assertneq_str") {
 		int results[5];
 		asserteq(getResults(f, results, 5), 5);
 
@@ -161,9 +160,9 @@ describe(asserts, {
 		asserteq(results[NEQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_FAILURE], FAILURE);
 		asserteq(results[TEST_WORKED], SUCCESS);
-	});
+	}
 
-	test("asserteq_str, assertneq_str", {
+	test("asserteq_str, assertneq_str") {
 		int results[4];
 		asserteq(getResults(f, results, 4), 4);
 
@@ -171,9 +170,9 @@ describe(asserts, {
 		asserteq(results[EQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_FAILURE], FAILURE);
-	});
+	}
 
-	test("asserteq_buf, assertneq_buf", {
+	test("asserteq_buf, assertneq_buf") {
 		int results[4];
 		asserteq(getResults(f, results, 4), 4);
 
@@ -181,11 +180,11 @@ describe(asserts, {
 		asserteq(results[EQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_SUCCESS], SUCCESS);
 		asserteq(results[NEQ_FAILURE], FAILURE);
-	});
+	}
 
-	test("asserteq", {
-		int results[8];
-		asserteq(getResults(f, results, 8), 8);
+	test("asserteq") {
+		int results[12];
+		asserteq(getResults(f, results, 12), 12);
 
 		asserteq(results[0], SUCCESS);
 		asserteq(results[1], FAILURE);
@@ -198,11 +197,17 @@ describe(asserts, {
 
 		asserteq(results[6], SUCCESS);
 		asserteq(results[7], FAILURE);
-	});
 
-	test("assertneq", {
-		int results[8];
-		asserteq(getResults(f, results, 8), 8);
+		asserteq(results[8], SUCCESS);
+		asserteq(results[9], FAILURE);
+
+		asserteq(results[10], SUCCESS);
+		asserteq(results[11], FAILURE);
+	}
+
+	test("assertneq") {
+		int results[12];
+		asserteq(getResults(f, results, 12), 12);
 
 		asserteq(results[0], FAILURE);
 		asserteq(results[1], SUCCESS);
@@ -215,41 +220,49 @@ describe(asserts, {
 
 		asserteq(results[6], FAILURE);
 		asserteq(results[7], SUCCESS);
-	});
+
+		asserteq(results[8], FAILURE);
+		asserteq(results[9], SUCCESS);
+
+		asserteq(results[10], FAILURE);
+		asserteq(results[11], SUCCESS);
+	}
 
 	pclose(f);
-});
+}
 
-describe(commandline, {
+describe(commandline) {
 // When running with git bash, argv[0] will be an absolute path, so
 // this test case would fail, because it assumes the -h option prints
 // the actual path used to run the binary.
-	NO_MINGW(it("prints usage with -h and --help", {
+#ifndef __MINGW32__
+	it("prints usage with -h and --help") {
 		assert(compareOutput("./cases/commandline --help", "commandline-help"));
 		assert(compareOutput("./cases/commandline -h", "commandline-help"));
-	}));
+	}
+#endif
 
-	it("prints version with -v and --version", {
+	it("prints version with -v and --version") {
 		assert(compareOutput("./cases/commandline --version", "commandline-version"));
 		assert(compareOutput("./cases/commandline -v", "commandline-version"));
-	});
+	}
 
-	it("prints only failure and a total with --quiet", {
+	it("prints only failure and a total with --quiet") {
 		assert(compareOutput("./cases/commandline --quiet", "commandline-quiet"));
 		assert(compareOutput("./cases/commandline -q", "commandline-quiet"));
-	});
+	}
 
-	it("prints times", {
+	it("prints times") {
 		assert(compareOutput("./cases/commandline", "commandline-timer"));
 		assert(compareOutput("./cases/commandline -t", "commandline-timer"));
 		assert(compareOutput("./cases/commandline --timer", "commandline-timer"));
-	});
+	}
 
-	it("prints no times with --no-timer", {
+	it("prints no times with --no-timer") {
 		assert(compareOutput("./cases/commandline --no-timer", "commandline-no-timer"));
-	});
+	}
 
-	it("logs to the file specified with --log", {
+	it("logs to the file specified with --log") {
 		int res = compareOutput("./cases/commandline --log tmpfile", "commandline-log-stdout");
 		defer(unlink("tmpfile"));
 		assert(res);
@@ -263,49 +276,52 @@ describe(commandline, {
 		defer(fclose(f2));
 
 		assert(compareFiles(f1, f2));
-	});
-});
+	}
+}
 
-describe(tests, {
-	it("performs all the tests", {
+describe(tests) {
+	it("performs all the tests") {
 		assert(compareOutput("./cases/tests", "tests-all"));
-	});
+	}
 
-	it("performs only a specific set of tests", {
+	it("performs only a specific set of tests") {
 		assert(compareOutput("./cases/tests a c", "tests-specific"));
-	});
+	}
 
-	it("performs a single test", {
+	it("performs a single test") {
 		assert(compareOutput("./cases/tests a", "tests-single"));
-	});
+	}
 
-	NO_MINGW(it("fails when asked to run a non-existant test suite", {
+#ifndef __MINGW32__
+	it("fails when asked to run a non-existant test suite") {
 		asserteq(
-			WEXITSTATUS(system("./cases/tests a b doesnt-exist 2>/dev/null")),
+			WEXITSTATUS(system("./cases/tests a b doesnt-exist >/dev/null")),
 			EXIT_FAILURE);
-	}));
-});
+	}
+#endif
+}
 
-describe(around, {
-	it("before_each and after_each should run before and after each test", {
+describe(around) {
+	it("before_each and after_each should run before and after each test") {
 		assert(compareOutput("./cases/around a", "around-before-after"));
-	});
+	}
 
-	it("subdesc use parent describe's before_each and after_each", {
+	it("subdesc use parent describe's before_each and after_each") {
 		assert(compareOutput("./cases/around d", "around-subdesc-parent-before-after"));
-	});
+	}
 
-	it("before_each and after_each should only run in a subdesc clause", {
+	it("before_each and after_each should only run in a subdesc clause") {
 		assert(compareOutput("./cases/around b", "around-before-after-only-in-subdesc"));
-	});
+	}
 
-	it("after_each in parent should complement subdesc", {
+	it("after_each in parent should complement subdesc") {
 		assert(compareOutput("./cases/around c", "around-after-complements-subdesc"));
-	});
+	}
 
-	it("before_each and after_each in subdesc should shadow the parent", {
+	it("before_each and after_each in subdesc should shadow the parent") {
 		assert(compareOutput("./cases/around e", "around-subdesc-before-after-shadow"));
-	});
-});
+	}
+}
 
 snow_main();
+#endif

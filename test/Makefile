@@ -7,16 +7,21 @@ VGFLAGS ?= \
 	--quiet --leak-check=full --show-leak-kinds=all \
 	--track-origins=yes --error-exitcode=1
 
-test-snow: test.c $(CASES) snow/snow.h
-	$(CC) -I. $(FLAGS)  -o $@ $<
+test-snow: test.c $(CASES) snow/.git
+	$(CC) -Isnow $(FLAGS)  -o $@ $<
 
 cases/%: cases/%.c ../snow/snow.h
-	$(CC) -I.. $(FLAGS) -o $@ $<
+	$(CC) -DSNOW_DUMMY_TIMER -I.. $(FLAGS) -o $@ $<
+
+snow/.git:
+	git clone -b experimentation https://github.com/mortie/snow.git snow
+	cd snow && git checkout v2.0.0
 
 test: test-snow
-	valgrind $(VGFLAGS) ./test-snow
+	valgrind $(VGFLAGS) ./test-snow $(ARGS)
 
 clean:
 	rm -f test-snow $(CASES)
+	rm -rf snow
 
 .PHONY: test clean
