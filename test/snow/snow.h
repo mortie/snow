@@ -1,4 +1,31 @@
-#ifdef SNOW_ENABLED
+#ifndef SNOW_ENABLED
+
+#define describe(name) __attribute__((unused)) static void _snow_unused_##name()
+#define subdesc(...) while (0)
+#define it(...) while (0)
+#define defer(...)
+#define before_each(...) while (0)
+#define after_each(...) while (0)
+#define fail(...)
+#define assert(...)
+
+#define asserteq_dbl(...)
+#define asserteq_ptr(...)
+#define asserteq_str(...)
+#define asserteq_int(...)
+#define asserteq_uint(...)
+#define asserteq_buf(...)
+#define asserteq(...)
+
+#define assertneq_dbl(...)
+#define assertneq_ptr(...)
+#define assertneq_str(...)
+#define assertneq_int(...)
+#define assertneq_uint(...)
+#define assertneq_buf(...)
+#define assertneq(...)
+
+#else
 
 #include <string.h>
 #include <stdlib.h>
@@ -6,8 +33,15 @@
 #include <sys/time.h>
 #include <setjmp.h>
 #include <unistd.h>
-#include <fnmatch.h>
 #include <stdint.h>
+
+#ifndef SNOW_USE_FNMATCH
+#define SNOW_USE_FNMATCH 1
+#endif
+
+#if SNOW_USE_FNMATCH == 1
+#include <fnmatch.h>
+#endif
 
 #define SNOW_VERSION "2.0.0-rc3"
 
@@ -23,24 +57,29 @@
  * Colors
  */
 
-#ifndef SNOW_COLOR_SUCCESS
-#define SNOW_COLOR_SUCCESS "\033[32m"
+#ifndef SNOW_COLOR_BOLD
+#define SNOW_COLOR_BOLD "\033[1m"
 #endif
 
-#ifndef SNOW_COLOR_MAYBE
-#define SNOW_COLOR_MAYBE "\033[35m"
+#ifndef SNOW_COLOR_RESET
+#define SNOW_COLOR_RESET "\033[0m"
+#endif
+
+#ifndef SNOW_COLOR_SUCCESS
+#define SNOW_COLOR_SUCCESS "\033[32m"
 #endif
 
 #ifndef SNOW_COLOR_FAIL
 #define SNOW_COLOR_FAIL "\033[31m"
 #endif
 
-#ifndef SNOW_COLOR_DESC
-#define SNOW_COLOR_DESC "\033[1m\033[33m"
+#ifndef SNOW_COLOR_MAYBE
+#define SNOW_COLOR_MAYBE "\033[35m"
 #endif
 
-#define _SNOW_COLOR_BOLD    "\033[1m"
-#define _SNOW_COLOR_RESET   "\033[0m"
+#ifndef SNOW_COLOR_DESC
+#define SNOW_COLOR_DESC SNOW_COLOR_BOLD "\033[33m"
+#endif
 
 /*
  * Array
@@ -280,9 +319,9 @@ static void _snow_print_case_begin() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? "
-			_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " _SNOW_COLOR_RESET,
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? "
+			SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: "
+			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " SNOW_COLOR_RESET,
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
@@ -307,10 +346,10 @@ static void _snow_print_case_success() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ "
-			_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
-			_SNOW_COLOR_RESET,
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ "
+			SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: "
+			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
+			SNOW_COLOR_RESET,
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
@@ -334,10 +373,10 @@ static char *_snow_print_case_failure() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ "
-			_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
-			_SNOW_COLOR_RESET ":\n",
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ "
+			SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  "
+			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
+			SNOW_COLOR_RESET ":\n",
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
@@ -363,7 +402,7 @@ static void _snow_print_desc_begin_index(size_t index) {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD "Testing %s" _SNOW_COLOR_RESET ":\n",
+			"%s" SNOW_COLOR_BOLD "Testing %s" SNOW_COLOR_RESET ":\n",
 			spaces, desc->name);
 	} else {
 		_snow_print("%sTesting %s:\n", spaces, desc->name);
@@ -389,8 +428,8 @@ static void _snow_print_desc_end() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD "%s: Passed %i/%i tests."
-			_SNOW_COLOR_RESET,
+			"%s" SNOW_COLOR_BOLD "%s: Passed %i/%i tests."
+			SNOW_COLOR_RESET,
 			spaces, _snow.current_desc->name,
 			_snow.current_desc->num_success, _snow.current_desc->num_tests);
 	} else {
@@ -502,11 +541,23 @@ static void _snow_desc_begin(const char *name) {
 
 		for (size_t i = 0; i < _snow.desc_patterns.length; ++i) {
 			char *pattern = *(char **)_snow_arr_get(&_snow.desc_patterns, i);
-			int match = fnmatch(pattern, desc.full_name, 0);
-			if (match == 0) {
+			int matched = 0;
+			int error = 0;
+
+			// Use fnmatch to do glob matching if that's enabled,
+			// otherwise just compare with strcmp
+#if SNOW_USE_FNMATCH == 1
+			int fm = fnmatch(pattern, desc.full_name, 0);
+			matched = fm == 0;
+			error = !matched && fm != FNM_NOMATCH;
+#else
+			matched = strcmp(pattern, desc.full_name) == 0;
+#endif
+
+			if (matched) {
 				desc.enabled = 1;
 				break;
-			} else if (match != FNM_NOMATCH) {
+			} else if (error) {
 				fprintf(stderr, "Pattern error: %s\n", pattern);
 				exit(EXIT_FAILURE);
 			}
@@ -812,7 +863,7 @@ static int snow_main_function(int argc, char **argv) {
 	if (should_print_total) {
 		if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 			_snow_print(
-				_SNOW_COLOR_BOLD "Total: Passed %i/%i tests." _SNOW_COLOR_RESET,
+				SNOW_COLOR_BOLD "Total: Passed %i/%i tests." SNOW_COLOR_RESET,
 				total_num_success, total_num_tests);
 		} else {
 			_snow_print("Total: Passed %i/%i tests.",
@@ -895,7 +946,6 @@ cleanup:
 		int _snow_after_each_done = 0; \
 		_snow_after_each_done == 0 && _snow_run_after_each; \
 		(_snow_after_each_done = 1, _snow_after_each_end()))
-
 
 #define fail(...) \
 	do { \
@@ -986,6 +1036,9 @@ static int _snow_assert_fake(int invert, ...) {
 	return -1;
 }
 
+// In mingw, size_t is compatible with unsigned int, and
+// ssize_t is compatible with int
+#ifdef __MINGW32__
 #define _snow_generic_assert(x) \
 	_Generic((x), \
 		float: _snow_assert_dbl, \
@@ -997,8 +1050,23 @@ static int _snow_assert_fake(int invert, ...) {
 		long long: _snow_assert_int, \
 		unsigned int: _snow_assert_uint, \
 		unsigned long long: _snow_assert_uint, \
+		default: _snow_assert_fake)
+#else
+#define _snow_generic_assert(x) \
+	_Generic((x), \
+		float: _snow_assert_dbl, \
+		double: _snow_assert_dbl, \
+		long double: _snow_assert_dbl, \
+		void *: _snow_assert_ptr, \
+		char *: _snow_assert_str, \
+		int: _snow_assert_int, \
+		long long: _snow_assert_int, \
+		ssize_t: _snow_assert_int, \
+		unsigned int: _snow_assert_uint, \
+		unsigned long long: _snow_assert_uint, \
 		size_t: _snow_assert_uint, \
 		default: _snow_assert_fake)
+#endif
 
 /*
  * Explicit asserteq macros
@@ -1028,7 +1096,7 @@ static int _snow_assert_fake(int invert, ...) {
 		_snow_assert_int( \
 			0, "" expl, (a), #a, (b), #b); \
 	} while (0)
-	#define asserteq_uint(a, b, expl...) \
+#define asserteq_uint(a, b, expl...) \
 	do { \
 		_snow_fail_update(); \
 		_snow_assert_uint( \
@@ -1039,6 +1107,26 @@ static int _snow_assert_fake(int invert, ...) {
 		_snow_fail_update(); \
 		_snow_assert_buf( \
 			0, "" expl, (a), #a, (b), #b, size); \
+	} while (0)
+#define asserteq_any(a, b, expl...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" expl; \
+		_Pragma("GCC diagnostic push") \
+		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
+		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+		_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
+		typeof ((a)+0) _a = a; \
+		typeof ((b)+0) _b = b; \
+		_Pragma("GCC diagnostic pop") \
+		if (sizeof(a) != sizeof(b)) { \
+			_snow_fail_expl(explanation, \
+				"Expected %s to equal %s, but their lengths don't match", \
+				#a, #b); \
+		} else { \
+			_snow_assert_buf( \
+				0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+		} \
 	} while (0)
 
 /*
@@ -1081,6 +1169,24 @@ static int _snow_assert_fake(int invert, ...) {
 		_snow_assert_buf( \
 			1, "" expl, (a), #a, (b), #b, (size)); \
 	} while (0)
+#define assertneq_any(a, b, expl...) \
+	do { \
+		_snow_fail_update(); \
+		char *explanation = "" expl; \
+		_Pragma("GCC diagnostic push") \
+		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
+		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+		_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
+		typeof ((a)+0) _a = a; \
+		typeof ((b)+0) _b = b; \
+		_Pragma("GCC diagnostic pop") \
+		if (sizeof(_a) != sizeof(_b)) { \
+			break; \
+		} else { \
+			_snow_assert_buf( \
+				1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+		} \
+	} while (0)
 
 /*
  * Automatic asserteq
@@ -1093,21 +1199,7 @@ static int _snow_assert_fake(int invert, ...) {
 		int ret = _snow_generic_assert(b)( \
 			0, explanation, (a), #a, (b), #b); \
 		if (ret < 0) { \
-			_Pragma("GCC diagnostic push") \
-			_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
-			_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
-			_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
-			typeof ((a)+0) _a = a; \
-			typeof ((b)+0) _b = b; \
-			_Pragma("GCC diagnostic pop") \
-			if (sizeof(a) != sizeof(b)) { \
-				_snow_fail_expl(explanation, \
-					"Expected %s to equal %s, but their lengths don't match", \
-					#a, #b); \
-			} else { \
-				_snow_assert_buf( \
-					0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
-			} \
+			asserteq_any(a, b, expl); \
 		} \
 	} while (0)
 
@@ -1119,26 +1211,10 @@ static int _snow_assert_fake(int invert, ...) {
 	do { \
 		_snow_fail_update(); \
 		char *explanation = "" expl; \
-		if (sizeof(a) != sizeof(b)) { \
-			break; \
-		} else { \
-			int ret = _snow_generic_assert(b)( \
-				1, explanation, (a), #a, (b), #b); \
-			if (ret < 0) { \
-				_Pragma("GCC diagnostic push") \
-				_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
-				_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
-				_Pragma("GCC diagnostic ignored \"-Wnull-pointer-arithmetic\"") \
-				typeof ((a)+0) _a = a; \
-				typeof ((b)+0) _b = b; \
-				_Pragma("GCC diagnostic pop") \
-				if (sizeof(_a) != sizeof(_b)) { \
-					break; \
-				} else { \
-					_snow_assert_buf( \
-						1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
-				} \
-			} \
+		int ret = _snow_generic_assert(b)( \
+			1, explanation, (a), #a, (b), #b); \
+		if (ret < 0) { \
+			assertneq_any(a, b, expl); \
 		} \
 } while (0)
 

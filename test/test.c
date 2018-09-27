@@ -5,7 +5,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <ctype.h>
+
+#ifndef __MINGW32__
 #include <sys/wait.h>
+#endif
 
 // This is relatively horrible and does no escaping,
 // so make sure that 'str' doesn't contain a single quote, k?

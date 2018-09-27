@@ -1036,6 +1036,9 @@ static int _snow_assert_fake(int invert, ...) {
 	return -1;
 }
 
+// In mingw, size_t is compatible with unsigned int, and
+// ssize_t is compatible with int
+#ifdef __MINGW32__
 #define _snow_generic_assert(x) \
 	_Generic((x), \
 		float: _snow_assert_dbl, \
@@ -1047,8 +1050,23 @@ static int _snow_assert_fake(int invert, ...) {
 		long long: _snow_assert_int, \
 		unsigned int: _snow_assert_uint, \
 		unsigned long long: _snow_assert_uint, \
+		default: _snow_assert_fake)
+#else
+#define _snow_generic_assert(x) \
+	_Generic((x), \
+		float: _snow_assert_dbl, \
+		double: _snow_assert_dbl, \
+		long double: _snow_assert_dbl, \
+		void *: _snow_assert_ptr, \
+		char *: _snow_assert_str, \
+		int: _snow_assert_int, \
+		long long: _snow_assert_int, \
+		ssize_t: _snow_assert_int, \
+		unsigned int: _snow_assert_uint, \
+		unsigned long long: _snow_assert_uint, \
 		size_t: _snow_assert_uint, \
 		default: _snow_assert_fake)
+#endif
 
 /*
  * Explicit asserteq macros
