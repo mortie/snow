@@ -10,6 +10,24 @@ If you have any questions, or just want to chat, just ping me (@mort) :)
 
 ![Screenshot](https://raw.githubusercontent.com/mortie/snow/master/img/screenshot.png)
 
+## Snow 2
+
+Snow 2 is a complete rewrite of Snow. Here are the highlights:
+
+* Blocks have moved from inside of macro arguments (i.e `describe(foo, { ... })`)
+  to outside of macro arguments (i.e `describe(foo) { ... }`). This applies to
+	`describe`, `subdesc`, `it`/`test`, `before_each`, and `after_each`.
+	* This means that it's possible to show line numbers, that compiler error
+	  messages are nicer, and syntax highlighters and auto indenters should be
+		more happy.
+* `asserteq` and `assertneq` works slightly differently, but most code which
+  worked before should continue to work.
+* All assertion macros have gotten an extra, optional argument, which is an
+  explanation of what the assertion means. For example, you can now write
+	`asserteq(foo, bar, "Some explanation")`.
+* You can select what tests to run with glob-style matches, not just filter
+  based on the name of the top-level describe.
+
 ## About
 
 Some miscellaneous points:
@@ -19,9 +37,12 @@ Some miscellaneous points:
   Clang. It should even work on GCC and Clang versions too old to support C11
   (or even C99), but the convenience `asserteq` and `assertneq` macros require
   C11.
-* Windows is supported through MinGW, with the caveat that it assumes your
-  terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
-  characters. Color is also disabled on Windows.
+* Windows is supported through MinGW or cygwin, with the caveat that it assumes
+  your terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
+  characters. (Git Bash and Cygwin's terminal should be fine though)
+	* Windows also generally doesn't have the `<fnmatch.h>` header. You can compile
+	  your tests with `-DSNOW_USE_FNMATCH=0` to disable fnmatch, or install
+		[Gnulib](https://www.gnu.org/software/gnulib/) in Cygwin.
 * I really recommend running the test executable with
   [valgrind](http://valgrind.org/). That will help you find memory issues such
   as memory leaks, out of bounds array reads/writes, etc.
