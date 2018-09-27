@@ -33,8 +33,15 @@
 #include <sys/time.h>
 #include <setjmp.h>
 #include <unistd.h>
-#include <fnmatch.h>
 #include <stdint.h>
+
+#ifndef SNOW_USE_FNMATCH
+#define SNOW_USE_FNMATCH 1
+#endif
+
+#if SNOW_USE_FNMATCH == 1
+#include <fnmatch.h>
+#endif
 
 #define SNOW_VERSION "2.0.0-rc3"
 
@@ -50,24 +57,29 @@
  * Colors
  */
 
-#ifndef SNOW_COLOR_SUCCESS
-#define SNOW_COLOR_SUCCESS "\033[32m"
+#ifndef SNOW_COLOR_BOLD
+#define SNOW_COLOR_BOLD "\033[1m"
 #endif
 
-#ifndef SNOW_COLOR_MAYBE
-#define SNOW_COLOR_MAYBE "\033[35m"
+#ifndef SNOW_COLOR_RESET
+#define SNOW_COLOR_RESET "\033[0m"
+#endif
+
+#ifndef SNOW_COLOR_SUCCESS
+#define SNOW_COLOR_SUCCESS "\033[32m"
 #endif
 
 #ifndef SNOW_COLOR_FAIL
 #define SNOW_COLOR_FAIL "\033[31m"
 #endif
 
-#ifndef SNOW_COLOR_DESC
-#define SNOW_COLOR_DESC "\033[1m\033[33m"
+#ifndef SNOW_COLOR_MAYBE
+#define SNOW_COLOR_MAYBE "\033[35m"
 #endif
 
-#define _SNOW_COLOR_BOLD    "\033[1m"
-#define _SNOW_COLOR_RESET   "\033[0m"
+#ifndef SNOW_COLOR_DESC
+#define SNOW_COLOR_DESC SNOW_COLOR_BOLD "\033[33m"
+#endif
 
 /*
  * Array
@@ -307,9 +319,9 @@ static void _snow_print_case_begin() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? "
-			_SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " _SNOW_COLOR_RESET,
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_MAYBE "? "
+			SNOW_COLOR_RESET SNOW_COLOR_MAYBE "Testing: "
+			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s: " SNOW_COLOR_RESET,
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
@@ -334,10 +346,10 @@ static void _snow_print_case_success() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ "
-			_SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
-			_SNOW_COLOR_RESET,
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_SUCCESS "✓ "
+			SNOW_COLOR_RESET SNOW_COLOR_SUCCESS "Success: "
+			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
+			SNOW_COLOR_RESET,
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
@@ -361,10 +373,10 @@ static char *_snow_print_case_failure() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ "
-			_SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  "
-			_SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
-			_SNOW_COLOR_RESET ":\n",
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ "
+			SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  "
+			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
+			SNOW_COLOR_RESET ":\n",
 			spaces, _snow.current_case.name);
 	} else {
 		_snow_print(
@@ -390,7 +402,7 @@ static void _snow_print_desc_begin_index(size_t index) {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD "Testing %s" _SNOW_COLOR_RESET ":\n",
+			"%s" SNOW_COLOR_BOLD "Testing %s" SNOW_COLOR_RESET ":\n",
 			spaces, desc->name);
 	} else {
 		_snow_print("%sTesting %s:\n", spaces, desc->name);
@@ -416,8 +428,8 @@ static void _snow_print_desc_end() {
 
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" _SNOW_COLOR_BOLD "%s: Passed %i/%i tests."
-			_SNOW_COLOR_RESET,
+			"%s" SNOW_COLOR_BOLD "%s: Passed %i/%i tests."
+			SNOW_COLOR_RESET,
 			spaces, _snow.current_desc->name,
 			_snow.current_desc->num_success, _snow.current_desc->num_tests);
 	} else {
@@ -529,11 +541,23 @@ static void _snow_desc_begin(const char *name) {
 
 		for (size_t i = 0; i < _snow.desc_patterns.length; ++i) {
 			char *pattern = *(char **)_snow_arr_get(&_snow.desc_patterns, i);
-			int match = fnmatch(pattern, desc.full_name, 0);
-			if (match == 0) {
+			int matched = 0;
+			int error = 0;
+
+			// Use fnmatch to do glob matching if that's enabled,
+			// otherwise just compare with strcmp
+#if SNOW_USE_FNMATCH == 1
+			int fm = fnmatch(pattern, desc.full_name, 0);
+			matched = fm == 0;
+			error = !matched && fm != FNM_NOMATCH;
+#else
+			matched = strcmp(pattern, desc.full_name) == 0;
+#endif
+
+			if (matched) {
 				desc.enabled = 1;
 				break;
-			} else if (match != FNM_NOMATCH) {
+			} else if (error) {
 				fprintf(stderr, "Pattern error: %s\n", pattern);
 				exit(EXIT_FAILURE);
 			}
@@ -839,7 +863,7 @@ static int snow_main_function(int argc, char **argv) {
 	if (should_print_total) {
 		if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 			_snow_print(
-				_SNOW_COLOR_BOLD "Total: Passed %i/%i tests." _SNOW_COLOR_RESET,
+				SNOW_COLOR_BOLD "Total: Passed %i/%i tests." SNOW_COLOR_RESET,
 				total_num_success, total_num_tests);
 		} else {
 			_snow_print("Total: Passed %i/%i tests.",

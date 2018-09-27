@@ -108,6 +108,20 @@ describe(files) {
 snow_main();
 ```
 
+## Compile options
+
+* **SNOW\_ENABLED**: Define to enable Snow.
+* **SNOW\_USE\_FNMATCH**": Set to 0 to not use fnmatch for test name
+  matching, and instead just compare literal strings. (Useful for systems
+  without fnmatch)
+* **SNOW\_COLOR\_SUCCESS**: The escape sequence before printing success.
+* **SNOW\_COLOR\_FAIL**: The escape sequence before printing failure.
+* **SNOW\_COLOR\_MAYBE**: The escape sequence before printing maybes.
+* **SNOW\_COLOR\_DESC**: The escape sequence before printing the test
+  description.
+* **SNOW\_COLOR\_BOLD**: The escape sequence for bold text.
+* **SNOW\_COLOR\_RESET**: The escape sequence to reset formatting.
+
 ## Structure Macros
 
 ### describe(testname) \<block>
