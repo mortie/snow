@@ -6,6 +6,8 @@
 #define defer(...)
 #define before_each(...) while (0)
 #define after_each(...) while (0)
+#define snow_fail_update(...)
+#define snow_fail(...)
 #define fail(...)
 #define assert(...)
 
