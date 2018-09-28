@@ -185,6 +185,7 @@ static void _snow_arr_reset(struct _snow_arr *arr) {
 enum {
 	_SNOW_OPT_VERSION,
 	_SNOW_OPT_HELP,
+	_SNOW_OPT_LIST,
 	_SNOW_OPT_COLOR,
 	_SNOW_OPT_QUIET,
 	_SNOW_OPT_MAYBES,
@@ -276,7 +277,7 @@ extern int _snow_inited;
 
 #define _snow_opt_default(opt, val) \
 	if (!_snow.opts[opt].is_overwritten) _snow.opts[opt].boolval = val
-#define _snow_opt_boolt(id, n, sn) \
+#define _snow_opt_bool(id, n, sn) \
 	_snow.opts[id].name = n; _snow.opts[id].shortname = sn; \
 	_snow.opts[id].is_bool = 1; _snow.opts[id].boolval = 0; \
 	_snow.opts[id].is_overwritten = 0
@@ -449,6 +450,7 @@ static void _snow_print_desc_begin() {
 
 __attribute__((unused))
 static void _snow_print_desc_end() {
+	if (_snow.opts[_SNOW_OPT_LIST].boolval) return;
 	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
@@ -519,13 +521,14 @@ static void _snow_init() {
 	_snow_arr_init(&_snow.bufs.spaces, sizeof(char));
 	_snow.current_desc = NULL;
 
-	_snow_opt_boolt(_SNOW_OPT_VERSION, "version", 'v');
-	_snow_opt_boolt(_SNOW_OPT_HELP,    "help",    'h');
-	_snow_opt_boolt(_SNOW_OPT_COLOR,   "color",   'c');
-	_snow_opt_boolt(_SNOW_OPT_QUIET,   "quiet",   'q');
-	_snow_opt_boolt(_SNOW_OPT_MAYBES,  "maybes",  'm');
-	_snow_opt_boolt(_SNOW_OPT_CR,      "cr",      '\0');
-	_snow_opt_boolt(_SNOW_OPT_TIMER,   "timer",   't');
+	_snow_opt_bool(_SNOW_OPT_VERSION, "version", 'v');
+	_snow_opt_bool(_SNOW_OPT_HELP,    "help",    'h');
+	_snow_opt_bool(_SNOW_OPT_LIST,    "list",    'l');
+	_snow_opt_bool(_SNOW_OPT_COLOR,   "color",   'c');
+	_snow_opt_bool(_SNOW_OPT_QUIET,   "quiet",   'q');
+	_snow_opt_bool(_SNOW_OPT_MAYBES,  "maybes",  'm');
+	_snow_opt_bool(_SNOW_OPT_CR,      "cr",      '\0');
+	_snow_opt_bool(_SNOW_OPT_TIMER,   "timer",   't');
 
 	_snow_opt_str(_SNOW_OPT_LOG, "log", 'l', "-");
 
@@ -598,6 +601,11 @@ static void _snow_desc_begin(const char *name) {
 
 	_snow.current_desc =
 		(struct _snow_desc *)_snow_arr_top(&_snow.desc_stack);
+
+	if (desc.enabled && _snow.opts[_SNOW_OPT_LIST].boolval) {
+		_snow_print("%s\n", _snow.current_desc->full_name);
+		return;
+	}
 }
 
 __attribute__((unused))
@@ -627,6 +635,7 @@ static void _snow_desc_end() {
  */
 #define _snow_case_begin(casename) \
 	do { \
+		if (_snow.opts[_SNOW_OPT_LIST].boolval) break; \
 		if (!_snow.current_desc->enabled) break; \
 		if (!_snow.current_desc->printed) _snow_print_desc_begin(); \
 		_snow.in_case = 1; \
@@ -720,6 +729,7 @@ static void _snow_usage(char *argv0)
 	_snow_print("       %s [options] <test>...  Run specific tests.\n", argv0);
 	_snow_print("       %s -v|--version         Print version and exit.\n", argv0);
 	_snow_print("       %s -h|--help            Display this help text and exit.\n", argv0);
+	_snow_print("       %s -l|--list            Display a list of all the tests.\n", argv0);
 	_snow_print(
 		"\n"
 		"Arguments:\n"
@@ -786,7 +796,7 @@ static int snow_main_function(int argc, char **argv) {
 		if (inverted) name += 3;
 
 		int is_match = 0;
-		for (int j = 0; i < _SNOW_OPT_LAST; ++j) {
+		for (int j = 0; j < _SNOW_OPT_LAST; ++j) {
 			struct _snow_opt *opt = _snow.opts + j;
 			is_match = is_long ? strcmp(name, opt->name) == 0 : name[0] == opt->shortname;
 			if (!is_match) continue;
@@ -861,6 +871,7 @@ static int snow_main_function(int argc, char **argv) {
 	}
 
 	// Other defaults
+	_snow_opt_default(_SNOW_OPT_LIST, 0);
 	_snow_opt_default(_SNOW_OPT_QUIET, 0);
 	_snow_opt_default(_SNOW_OPT_TIMER, 1);
 
@@ -883,31 +894,33 @@ static int snow_main_function(int argc, char **argv) {
 		_snow_desc_end();
 	}
 
-	int should_print_total =
-		_snow.opts[_SNOW_OPT_QUIET].boolval ||
-		total_descs_ran > 1;
-
-	if (!_snow.opts[_SNOW_OPT_QUIET].boolval)
-		_snow_print("\n");
-
-	if (should_print_total) {
-		if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
-			_snow_print(
-				SNOW_COLOR_BOLD "Total: Passed %i/%i tests." SNOW_COLOR_RESET,
-				total_num_success, total_num_tests);
-		} else {
-			_snow_print("Total: Passed %i/%i tests.",
-				total_num_success, total_num_tests);
-		}
-
-		if (_snow.opts[_SNOW_OPT_TIMER].boolval) {
-			_snow_print(" ");
-			_snow_print_timer(total_start_time);
-		}
-		_snow_print("\n");
+	if (!_snow.opts[_SNOW_OPT_LIST].boolval) {
+		int should_print_total =
+			_snow.opts[_SNOW_OPT_QUIET].boolval ||
+			total_descs_ran > 1;
 
 		if (!_snow.opts[_SNOW_OPT_QUIET].boolval)
 			_snow_print("\n");
+
+		if (should_print_total) {
+			if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
+				_snow_print(
+					SNOW_COLOR_BOLD "Total: Passed %i/%i tests." SNOW_COLOR_RESET,
+					total_num_success, total_num_tests);
+			} else {
+				_snow_print("Total: Passed %i/%i tests.",
+					total_num_success, total_num_tests);
+			}
+
+			if (_snow.opts[_SNOW_OPT_TIMER].boolval) {
+				_snow_print(" ");
+				_snow_print_timer(total_start_time);
+			}
+			_snow_print("\n");
+
+			if (!_snow.opts[_SNOW_OPT_QUIET].boolval)
+				_snow_print("\n");
+		}
 	}
 
 	/*

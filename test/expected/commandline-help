@@ -2,6 +2,7 @@ Usage: ./cases/commandline [options]            Run all tests.
        ./cases/commandline [options] <test>...  Run specific tests.
        ./cases/commandline -v|--version         Print version and exit.
        ./cases/commandline -h|--help            Display this help text and exit.
+       ./cases/commandline -l|--list            Display a list of all the tests.
 
 Arguments:
     --color|-c:   Enable colors.
