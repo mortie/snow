@@ -450,7 +450,6 @@ static void _snow_print_desc_begin() {
 
 __attribute__((unused))
 static void _snow_print_desc_end() {
-	if (_snow.opts[_SNOW_OPT_LIST].boolval) return;
 	if (_snow.opts[_SNOW_OPT_QUIET].boolval) return;
 	char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
 
@@ -610,7 +609,7 @@ static void _snow_desc_begin(const char *name) {
 
 __attribute__((unused))
 static void _snow_desc_end() {
-	if (_snow.current_desc->printed)
+	if (_snow.current_desc->printed && !_snow.opts[_SNOW_OPT_LIST].boolval)
 		_snow_print_desc_end();
 
 	struct _snow_desc *desc =
