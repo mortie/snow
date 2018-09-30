@@ -15,7 +15,7 @@ cases/%: cases/%.c ../snow/snow.h
 
 snow/.git:
 	git clone -b experimentation https://github.com/mortie/snow.git snow
-	cd snow && git checkout v2.0.0
+	cd snow && git checkout v2.1.0
 
 test: test-snow
 	valgrind $(VGFLAGS) ./test-snow $(ARGS)
