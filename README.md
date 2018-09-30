@@ -3,7 +3,7 @@
 # Snow
 
 Snow is a header-only unit testing library for C. Just include the file
-[snow/snow.h](https://github.com/mortie/snow/blob/v2.0.0/snow/snow.h).
+[snow/snow.h](https://github.com/mortie/snow/blob/v2.1.0/snow/snow.h).
 
 IRC channel: [#snow](http://webchat.freenode.net?channels=snow) on Freenode.
 If you have any questions, or just want to chat, just ping me (@mort) :)
