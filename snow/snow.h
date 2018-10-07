@@ -331,7 +331,9 @@ static double _snow_now() {
 __attribute__((unused))
 static void _snow_print_timer(double start_time) {
 	double msec = _snow_now() - start_time;
-	if (msec < 1000) {
+	if (msec < 1) {
+		_snow_print("(%.02fµs)", msec * 1000);
+	} else if (msec < 1000) {
 		_snow_print("(%.02fms)", msec);
 	} else {
 		_snow_print("(%.02fs)", msec / 1000);
