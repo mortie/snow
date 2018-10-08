@@ -604,7 +604,8 @@ static void _snow_desc_begin(const char *name) {
 		(struct _snow_desc *)_snow_arr_top(&_snow.desc_stack);
 
 	if (desc.enabled && _snow.opts[_SNOW_OPT_LIST].boolval) {
-		_snow_print("%s\n", _snow.current_desc->full_name);
+		char *spaces = _snow_spaces(_snow.desc_stack.length - 1);
+		_snow_print("%s%s\n", spaces, _snow.current_desc->full_name);
 		return;
 	}
 }
