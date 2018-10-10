@@ -57,6 +57,6 @@ echo
 echo "Press enter to push, ^C to cancel."
 read
 
-git tag -a "$version" -F "$tmp"
+git tag -a "$tag" -F "$tmp"
 
 rm "$tmp"
