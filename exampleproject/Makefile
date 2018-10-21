@@ -25,7 +25,7 @@ obj-test/%.o: src/%.c $(HDR)
 	$(CC) -DSNOW_ENABLED -g $(INCLUDE) $(CFLAGS) -c -o $@ $<
 
 test: test-$(TARGET)
-	valgrind $(VGFLAGS) ./test-$(TARGET)
+	valgrind $(VGFLAGS) ./test-$(TARGET) $(ARGS)
 
 clean:
 	rm -rf obj obj-test
