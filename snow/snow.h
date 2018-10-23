@@ -924,7 +924,11 @@ static int snow_main_function(int argc, char **argv) {
 
 	// If --gdb was passed, re-run under GDB
 	if (_snow.opts[_SNOW_OPT_GDB].boolval) {
-
+#ifdef __MINGW32__
+		fprintf(stderr, "Running under GDB is not supported with mingw.");
+		_snow.exit_code = EXIT_FAILURE;
+		goto cleanup;
+#else
 		// Create temporary file
 		char tmp_s[] = "/tmp/snow.XXXXXX";
 		char tmp[sizeof(tmp_s)];
@@ -1010,6 +1014,7 @@ static int snow_main_function(int argc, char **argv) {
 			_snow.exit_code = WEXITSTATUS(status);
 			goto cleanup;
 		}
+#endif
 	}
 
 	/*
