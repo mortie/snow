@@ -182,6 +182,8 @@ static void _snow_arr_reset(struct _snow_arr *arr) {
  * Snow Core
  */
 
+void snow_break();
+
 enum {
 	_SNOW_OPT_VERSION,
 	_SNOW_OPT_HELP,
@@ -192,6 +194,8 @@ enum {
 	_SNOW_OPT_CR,
 	_SNOW_OPT_TIMER,
 	_SNOW_OPT_LOG,
+	_SNOW_OPT_RERUN_FAILED,
+	_SNOW_OPT_GDB,
 	_SNOW_OPT_LAST,
 };
 
@@ -238,10 +242,12 @@ struct _snow {
 	struct _snow_opt opts[_SNOW_OPT_LAST];
 
 	int in_case;
+	int rerunning_case;
 	struct {
 		const char *name;
 		double start_time;
 		struct _snow_arr defers;
+		jmp_buf rerun;
 		jmp_buf done_jmp_ret;
 		jmp_buf defer_jmp_ret;
 		jmp_buf before_jmp_ret;
@@ -522,14 +528,16 @@ static void _snow_init() {
 	_snow_arr_init(&_snow.bufs.spaces, sizeof(char));
 	_snow.current_desc = NULL;
 
-	_snow_opt_bool(_SNOW_OPT_VERSION, "version", 'v');
-	_snow_opt_bool(_SNOW_OPT_HELP,    "help",    'h');
-	_snow_opt_bool(_SNOW_OPT_LIST,    "list",    'l');
-	_snow_opt_bool(_SNOW_OPT_COLOR,   "color",   'c');
-	_snow_opt_bool(_SNOW_OPT_QUIET,   "quiet",   'q');
-	_snow_opt_bool(_SNOW_OPT_MAYBES,  "maybes",  'm');
-	_snow_opt_bool(_SNOW_OPT_CR,      "cr",      '\0');
-	_snow_opt_bool(_SNOW_OPT_TIMER,   "timer",   't');
+	_snow_opt_bool(_SNOW_OPT_VERSION,      "version",      'v');
+	_snow_opt_bool(_SNOW_OPT_HELP,         "help",         'h');
+	_snow_opt_bool(_SNOW_OPT_LIST,         "list",         'l');
+	_snow_opt_bool(_SNOW_OPT_COLOR,        "color",        'c');
+	_snow_opt_bool(_SNOW_OPT_QUIET,        "quiet",        'q');
+	_snow_opt_bool(_SNOW_OPT_MAYBES,       "maybes",       'm');
+	_snow_opt_bool(_SNOW_OPT_CR,           "cr",           '\0');
+	_snow_opt_bool(_SNOW_OPT_TIMER,        "timer",        't');
+	_snow_opt_bool(_SNOW_OPT_RERUN_FAILED, "rerun-failed", '\0');
+	_snow_opt_bool(_SNOW_OPT_GDB,          "gdb",          'g');
 
 	_snow_opt_str(_SNOW_OPT_LOG, "log", 'l', "-");
 
@@ -674,15 +682,21 @@ static void _snow_case_end(int success) {
 	if (!_snow.in_case)
 		return;
 
-	_snow.in_case = 0;
-	if (success) {
-		_snow.current_desc->num_success += 1;
-		_snow_print_case_success();
+	if (_snow.opts[_SNOW_OPT_RERUN_FAILED].boolval && !_snow.rerunning_case && !success) {
+		_snow.rerunning_case = 1;
+		longjmp(_snow.current_case.rerun, 1);
 	} else {
-		_snow.exit_code = EXIT_FAILURE;
-	}
+		if (success) {
+			_snow.current_desc->num_success += 1;
+			_snow_print_case_success();
+		} else {
+			_snow.exit_code = EXIT_FAILURE;
+		}
 
-	longjmp(_snow.current_case.done_jmp_ret, 1);
+		_snow.rerunning_case = 0;
+		_snow.in_case = 0;
+		longjmp(_snow.current_case.done_jmp_ret, 1);
+	}
 }
 
 /*
@@ -735,32 +749,40 @@ static void _snow_usage(char *argv0)
 	_snow_print(
 		"\n"
 		"Arguments:\n"
-		"    --color|-c:   Enable colors.\n"
-		"                  Default: on when output is a TTY.\n"
-		"    --no-color:   Force disable --color.\n"
+		"    --color|-c:     Enable colors.\n"
+		"                    Default: on when output is a TTY.\n"
+		"    --no-color:     Force disable --color.\n"
 		"\n"
-		"    --quiet|-q:   Suppress most messages, only test failures and a summary\n"
-		"                  error count is shown.\n"
-		"                  Default: off.\n"
-		"    --no-quiet:   Force disable --quiet.\n"
+		"    --quiet|-q:     Suppress most messages, only test failures and a summary\n"
+		"                    error count is shown.\n"
+		"                    Default: off.\n"
+		"    --no-quiet:     Force disable --quiet.\n"
 		"\n"
-		"    --log <file>: Log output to a file, rather than stdout.\n"
+		"    --log <file>:   Log output to a file, rather than stdout.\n"
 		"\n"
-		"    --timer|-t:   Display the time taken for by each test after\n"
-		"                  it is completed.\n"
-		"                  Default: on.\n"
-		"    --no-timer:   Force disable --timer.\n"
+		"    --timer|-t:     Display the time taken for by each test after\n"
+		"                    it is completed.\n"
+		"                    Default: on.\n"
+		"    --no-timer:     Force disable --timer.\n"
 		"\n"
-		"    --maybes|-m:  Print out messages when begining a test as well\n"
-		"                  as when it is completed.\n"
-		"                  Default: on when the output is a TTY.\n"
-		"    --no-maybes:  Force disable --maybes.\n"
+		"    --maybes|-m:    Print out messages when begining a test as well\n"
+		"                    as when it is completed.\n"
+		"                    Default: on when the output is a TTY.\n"
+		"    --no-maybes:    Force disable --maybes.\n"
 		"\n"
-		"    --cr:         Print a carriage return (\\r) rather than a newline\n"
-		"                  after each --maybes message. This means that the fail or\n"
-		"                  success message will appear on the same line.\n"
-		"                  Default: on when the output is a TTY.\n"
-		"    --no-cr:      Force disable --cr.\n");
+		"    --cr:           Print a carriage return (\\r) rather than a newline\n"
+		"                    after each --maybes message. This means that the fail or\n"
+		"                    success message will appear on the same line.\n"
+		"                    Default: on when the output is a TTY.\n"
+		"    --no-cr:        Force disable --cr.\n"
+		"\n"
+		"    --rerun-failed: Re-run commands when they fail, after calling the\n"
+		"                    'snow_break' function. Used by --gdb.\n"
+		"                    Default: off.\n"
+		"\n"
+		"    --gdb, -g:      Run the test suite on GDB, and break and re-run\n"
+		"                    test cases which fail.\n"
+		"                    Default: off.\n");
 }
 
 /*
@@ -876,6 +898,67 @@ static int snow_main_function(int argc, char **argv) {
 	_snow_opt_default(_SNOW_OPT_LIST, 0);
 	_snow_opt_default(_SNOW_OPT_QUIET, 0);
 	_snow_opt_default(_SNOW_OPT_TIMER, 1);
+	_snow_opt_default(_SNOW_OPT_RERUN_FAILED, 0);
+	_snow_opt_default(_SNOW_OPT_GDB, 0);
+
+	// If --gdb was passed, re-run under GDB
+	if (_snow.opts[_SNOW_OPT_GDB].boolval) {
+
+		// Create temporary file
+		char tmp_s[] = "/tmp/snow.XXXXXX";
+		char tmp[sizeof(tmp_s)];
+		strcpy(tmp, tmp_s);
+		int tmpfd = mkstemp(tmp);
+		if (tmpfd < 0) {
+			perror("mkstemp");
+			_snow.exit_code = EXIT_FAILURE;
+			goto cleanup;
+		}
+
+		// Fill temporary file
+		char ex[] =
+			"break snow_break\n"
+			"commands\n"
+			"step\n"
+			"end\n";
+		if (write(tmpfd, ex, strlen(ex)) < 0) {
+			perror("write");
+			_snow.exit_code = EXIT_FAILURE;
+			goto cleanup;
+		}
+
+		// Static arguments
+		char *stdargv[] = {
+			"gdb",
+			"-x", tmp,
+			"--args", argv[0], "--rerun-failed",
+		};
+		size_t stdargc = sizeof(stdargv) / sizeof(*stdargv);
+
+		// Dynamic arguments
+		char **args = malloc(sizeof(*args) * (stdargc + argc) + 1);
+		size_t idx = 0;
+		for (int i = 0; i < stdargc; ++i) {
+			args[idx++] = stdargv[i];
+		}
+		for (int i = 1; i < argc; ++i) {
+			if (strcmp(argv[i], "--gdb") != 0 && strcmp(argv[i], "-g") != 0) {
+				args[idx++] = argv[i];
+			}
+		}
+		args[idx++] = NULL;
+
+		// Run
+		if (execvp("gdb", args) < 0) {
+			perror("gdb");
+		} else {
+			fprintf(stderr,
+				"execvp returned with no error, this should never happen.\n");
+		}
+
+		_snow.exit_code = EXIT_FAILURE;
+		goto cleanup;
+	}
 
 	/*
 	 * Run descs
@@ -962,6 +1045,11 @@ cleanup:
 
 #define it(name) \
 	_snow_case_begin(name); \
+	if (_snow.opts[_SNOW_OPT_RERUN_FAILED].boolval) { \
+		if (setjmp(_snow.current_case.rerun) == 1) { \
+			snow_break(); \
+		} \
+	} \
 	for (; _snow.in_case; _snow_case_end(1))
 #define test it
 
@@ -999,6 +1087,7 @@ cleanup:
 	} while (0)
 
 #define snow_main() \
+	void snow_break() {}; \
 	struct _snow _snow; \
 	int _snow_inited = 0; \
 	int main(int argc, char **argv) { \
