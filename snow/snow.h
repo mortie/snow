@@ -974,12 +974,41 @@ static int snow_main_function(int argc, char **argv) {
 		}
 		args[idx++] = NULL;
 
-		// Run
-		if (execvp("gdb", args) < 0) {
-			perror("gdb");
-		} else {
-			fprintf(stderr,
+		// Fork
+		pid_t child = fork();
+		if (child < 0) {
+			perror("fork");
+			_snow.exit_code = EXIT_FAILURE;
+			goto cleanup;
+		}
+
+		// Child
+		if (child == 0) {
+			if (execvp("gdb", args) < 0) {
+				perror("gdb");
+			} else {
+				fprintf(stderr,
 					"execvp returned with no error, this should never happen.\n");
+			}
+			exit(EXIT_FAILURE);
+
+		// Parent
+		} else {
+			int status;
+			if (waitpid(child, &status, 0) < 0) {
+				perror("waitpid");
+				_snow.exit_code = EXIT_FAILURE;
+				goto cleanup;
+			}
+
+			if (unlink(tmp) < 0) {
+				perror(tmp);
+				_snow.exit_code = EXIT_FAILURE;
+				goto cleanup;
+			}
+
+			_snow.exit_code = WEXITSTATUS(status);
+			goto cleanup;
 		}
 
 		_snow.exit_code = EXIT_FAILURE;
