@@ -1010,9 +1010,6 @@ static int snow_main_function(int argc, char **argv) {
 			_snow.exit_code = WEXITSTATUS(status);
 			goto cleanup;
 		}
-
-		_snow.exit_code = EXIT_FAILURE;
-		goto cleanup;
 	}
 
 	/*
