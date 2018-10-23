@@ -1103,7 +1103,7 @@ cleanup:
 	} while (0)
 
 #define snow_main() \
-	void snow_break() {}; \
+	void snow_break() {} \
 	struct _snow _snow; \
 	int _snow_inited = 0; \
 	int main(int argc, char **argv) { \
