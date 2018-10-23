@@ -39,6 +39,7 @@
 #define fail(...)
 #define assert(...)
 #define snow_break()
+#define snow_rerun_failed()
 
 #define asserteq_dbl(...)
 #define asserteq_ptr(...)
@@ -184,6 +185,7 @@ static void _snow_arr_reset(struct _snow_arr *arr) {
  */
 
 void snow_break();
+void snow_rerun_failed();
 
 enum {
 	_SNOW_OPT_VERSION,
@@ -493,6 +495,9 @@ static void _snow_print_desc_end() {
  */
 
 #define snow_fail(...) \
+	if (_snow.rerunning_case) { \
+		snow_rerun_failed(); \
+	} \
 	do { \
 		char *spaces = _snow_print_case_failure(); \
 		_snow_print("%s    ", spaces); \
@@ -936,6 +941,11 @@ static int snow_main_function(int argc, char **argv) {
 			"break snow_break\n"
 			"commands\n"
 			"step\n"
+			"end\n"
+			"break snow_rerun_failed\n"
+			"commands\n"
+			"echo \\n*** Assertion failed while re-running. Stack trace:\\n\n"
+			"bt\n"
 			"end\n";
 		if (write(tmpfd, ex, strlen(ex)) < 0) {
 			perror("write");
@@ -969,7 +979,7 @@ static int snow_main_function(int argc, char **argv) {
 			perror("gdb");
 		} else {
 			fprintf(stderr,
-				"execvp returned with no error, this should never happen.\n");
+					"execvp returned with no error, this should never happen.\n");
 		}
 
 		_snow.exit_code = EXIT_FAILURE;
@@ -1006,11 +1016,11 @@ static int snow_main_function(int argc, char **argv) {
 		if (should_print_total) {
 			if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 				_snow_print(
-					SNOW_COLOR_BOLD "Total: Passed %i/%i tests." SNOW_COLOR_RESET,
-					total_num_success, total_num_tests);
+						SNOW_COLOR_BOLD "Total: Passed %i/%i tests." SNOW_COLOR_RESET,
+						total_num_success, total_num_tests);
 			} else {
 				_snow_print("Total: Passed %i/%i tests.",
-					total_num_success, total_num_tests);
+						total_num_success, total_num_tests);
 			}
 
 			if (_snow.opts[_SNOW_OPT_TIMER].boolval) {
@@ -1057,7 +1067,7 @@ cleanup:
 #define subdesc(name) \
 	_snow_desc_begin(#name); \
 	for (int _snow_desc_done = 0; _snow_desc_done == 0; \
-		(_snow_desc_done = 1, _snow_desc_end()))
+			(_snow_desc_done = 1, _snow_desc_end()))
 
 #define it(name) \
 	_snow_case_begin(name); \
@@ -1084,17 +1094,17 @@ cleanup:
 	_snow.current_desc->has_before_jmp = 1; \
 	int _snow_run_before_each = setjmp(_snow.current_desc->before_jmp); \
 	for ( \
-		int _snow_before_each_done = 0; \
-		_snow_before_each_done == 0 && _snow_run_before_each; \
-		(_snow_before_each_done = 1, _snow_before_each_end()))
+			int _snow_before_each_done = 0; \
+			_snow_before_each_done == 0 && _snow_run_before_each; \
+			(_snow_before_each_done = 1, _snow_before_each_end()))
 
 #define after_each() \
 	_snow.current_desc->has_after_jmp = 1; \
 	int _snow_run_after_each = setjmp(_snow.current_desc->after_jmp); \
 	for ( \
-		int _snow_after_each_done = 0; \
-		_snow_after_each_done == 0 && _snow_run_after_each; \
-		(_snow_after_each_done = 1, _snow_after_each_end()))
+			int _snow_after_each_done = 0; \
+			_snow_after_each_done == 0 && _snow_run_after_each; \
+			(_snow_after_each_done = 1, _snow_after_each_end()))
 
 #define fail(...) \
 	do { \
@@ -1104,6 +1114,7 @@ cleanup:
 
 #define snow_main() \
 	void snow_break() {} \
+	void snow_rerun_failed() {} \
 	struct _snow _snow; \
 	int _snow_inited = 0; \
 	int main(int argc, char **argv) { \
