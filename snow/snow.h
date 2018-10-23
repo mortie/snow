@@ -38,6 +38,7 @@
 #define snow_fail(...)
 #define fail(...)
 #define assert(...)
+#define snow_break()
 
 #define asserteq_dbl(...)
 #define asserteq_ptr(...)
@@ -244,6 +245,7 @@ struct _snow {
 	int in_case;
 	int rerunning_case;
 	struct {
+		int success;
 		const char *name;
 		double start_time;
 		struct _snow_arr defers;
@@ -649,6 +651,7 @@ static void _snow_desc_end() {
 		if (!_snow.current_desc->enabled) break; \
 		if (!_snow.current_desc->printed) _snow_print_desc_begin(); \
 		_snow.in_case = 1; \
+		_snow.current_case.success = 0; \
 		_snow.current_case.name = casename; \
 		_snow.current_case.start_time = _snow_now(); \
 		_snow_arr_reset(&_snow.current_case.defers); \
@@ -667,9 +670,26 @@ static void _snow_desc_end() {
 					longjmp(*jmp, 1); \
 				} \
 			} \
+			/* Run after_each */ \
 			if (_snow.current_desc->has_after_jmp) { \
 				if (setjmp(_snow.current_case.after_jmp_ret) == 0) \
 					longjmp(_snow.current_desc->after_jmp, 1); \
+			} \
+			/* Either re-run or just go back */ \
+			int should_rerun = _snow.opts[_SNOW_OPT_RERUN_FAILED].boolval && \
+				!_snow.rerunning_case && !_snow.current_case.success; \
+			if (should_rerun) { \
+				/* Run before_each again */ \
+				if (_snow.current_desc->has_before_jmp) { \
+					if (setjmp(_snow.current_case.before_jmp_ret) == 0) \
+					longjmp(_snow.current_desc->before_jmp, 1); \
+				} \
+				/* Actually re-run */ \
+				_snow.rerunning_case = 1; \
+				longjmp(_snow.current_case.rerun, 1); \
+			} else { \
+				_snow.rerunning_case = 0; \
+				_snow.in_case = 0; \
 			} \
 		} \
 	} while (0)
@@ -682,21 +702,17 @@ static void _snow_case_end(int success) {
 	if (!_snow.in_case)
 		return;
 
-	if (_snow.opts[_SNOW_OPT_RERUN_FAILED].boolval && !_snow.rerunning_case && !success) {
-		_snow.rerunning_case = 1;
-		longjmp(_snow.current_case.rerun, 1);
-	} else {
+	if (!_snow.rerunning_case) {
+		_snow.current_case.success = success;
 		if (success) {
 			_snow.current_desc->num_success += 1;
 			_snow_print_case_success();
 		} else {
 			_snow.exit_code = EXIT_FAILURE;
 		}
-
-		_snow.rerunning_case = 0;
-		_snow.in_case = 0;
-		longjmp(_snow.current_case.done_jmp_ret, 1);
 	}
+
+	longjmp(_snow.current_case.done_jmp_ret, 1);
 }
 
 /*
@@ -1055,9 +1071,9 @@ cleanup:
 
 #define defer(...) \
 	do { \
-		jmp_buf jmp; \
-		if (setjmp(jmp) == 0) { \
-			_snow_case_defer_push(jmp); \
+		jmp_buf _snow_jmp; \
+		if (setjmp(_snow_jmp) == 0) { \
+			_snow_case_defer_push(_snow_jmp); \
 		} else { \
 			__VA_ARGS__; \
 			_snow_case_defer_jmp(); \
