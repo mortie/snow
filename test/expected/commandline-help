@@ -5,29 +5,37 @@ Usage: ./cases/commandline [options]            Run all tests.
        ./cases/commandline -l|--list            Display a list of all the tests.
 
 Arguments:
-    --color|-c:   Enable colors.
-                  Default: on when output is a TTY.
-    --no-color:   Force disable --color.
+    --color|-c:     Enable colors.
+                    Default: on when output is a TTY.
+    --no-color:     Force disable --color.
 
-    --quiet|-q:   Suppress most messages, only test failures and a summary
-                  error count is shown.
-                  Default: off.
-    --no-quiet:   Force disable --quiet.
+    --quiet|-q:     Suppress most messages, only test failures and a summary
+                    error count is shown.
+                    Default: off.
+    --no-quiet:     Force disable --quiet.
 
-    --log <file>: Log output to a file, rather than stdout.
+    --log <file>:   Log output to a file, rather than stdout.
 
-    --timer|-t:   Display the time taken for by each test after
-                  it is completed.
-                  Default: on.
-    --no-timer:   Force disable --timer.
+    --timer|-t:     Display the time taken for by each test after
+                    it is completed.
+                    Default: on.
+    --no-timer:     Force disable --timer.
 
-    --maybes|-m:  Print out messages when begining a test as well
-                  as when it is completed.
-                  Default: on when the output is a TTY.
-    --no-maybes:  Force disable --maybes.
+    --maybes|-m:    Print out messages when begining a test as well
+                    as when it is completed.
+                    Default: on when the output is a TTY.
+    --no-maybes:    Force disable --maybes.
 
-    --cr:         Print a carriage return (\r) rather than a newline
-                  after each --maybes message. This means that the fail or
-                  success message will appear on the same line.
-                  Default: on when the output is a TTY.
-    --no-cr:      Force disable --cr.
+    --cr:           Print a carriage return (\r) rather than a newline
+                    after each --maybes message. This means that the fail or
+                    success message will appear on the same line.
+                    Default: on when the output is a TTY.
+    --no-cr:        Force disable --cr.
+
+    --rerun-failed: Re-run commands when they fail, after calling the
+                    'snow_break' function. Used by --gdb.
+                    Default: off.
+
+    --gdb, -g:      Run the test suite on GDB, and break and re-run
+                    test cases which fail.
+                    Default: off.
