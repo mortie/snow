@@ -71,7 +71,7 @@
 # ifndef SNOW_USE_FNMATCH
 # define SNOW_USE_FNMATCH 0
 # endif
-#elif
+#else
 # ifndef SNOW_USE_FNMATCH
 # define SNOW_USE_FNMATCH 1
 # endif
