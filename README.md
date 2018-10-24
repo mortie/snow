@@ -16,7 +16,7 @@ Snow 2 is a complete rewrite of Snow. Here are the highlights:
 
 * Blocks have moved from inside of macro arguments (i.e `describe(foo, { ... })`)
   to outside of macro arguments (i.e `describe(foo) { ... }`). This applies to
-	`describe`, `subdesc`, `it`/`test`, `before_each`, and `after_each`.
+  `describe`, `subdesc`, `it`/`test`, `before_each`, and `after_each`.
 	* This means that it's possible to show line numbers, that compiler error
 	  messages are nicer, and syntax highlighters and auto indenters should be
 	  more happy.
@@ -45,10 +45,10 @@ Some miscellaneous points:
   characters. (Git Bash and Cygwin's terminal should be fine though)
 	* Windows also generally doesn't have the `<fnmatch.h>` header.
 	  Snow defaults to compile without fnmatch under MinGW
-		(and instead uses plain strcmp). You can control this with
-		`-DSNOW_USE_FNMATCH=1` or `-DSNOW_USE_FNMATCH=0`.
-		[Gnulib](https://www.gnu.org/software/gnulib/manual/gnulib.html)
-		implements fnmatch, and supports Windows under Cygwin.
+	  (and instead uses plain strcmp). You can control this with
+	  `-DSNOW_USE_FNMATCH=1` or `-DSNOW_USE_FNMATCH=0`.
+	  [Gnulib](https://www.gnu.org/software/gnulib/manual/gnulib.html)
+	  implements fnmatch, and supports Windows under Cygwin.
 
 ## Usage
 
