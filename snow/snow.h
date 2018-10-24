@@ -67,8 +67,14 @@
 #include <unistd.h>
 #include <stdint.h>
 
-#ifndef SNOW_USE_FNMATCH
-#define SNOW_USE_FNMATCH 1
+#ifdef __MINGW32__
+# ifndef SNOW_USE_FNMATCH
+# define SNOW_USE_FNMATCH 0
+# endif
+#elif
+# ifndef SNOW_USE_FNMATCH
+# define SNOW_USE_FNMATCH 1
+# endif
 #endif
 
 #if SNOW_USE_FNMATCH == 1
@@ -341,6 +347,7 @@ static double _snow_now() {
 __attribute__((unused))
 static void _snow_print_timer(double start_time) {
 	double msec = _snow_now() - start_time;
+	if (msec < 0) msec = 0;
 	if (msec < 1) {
 		_snow_print("(%.02fµs)", msec * 1000);
 	} else if (msec < 1000) {
