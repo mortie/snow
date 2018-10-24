@@ -37,15 +37,18 @@ Some miscellaneous points:
   Clang. It should even work on GCC and Clang versions too old to support C11
   (or even C99), but the convenience `asserteq` and `assertneq` macros require
   C11.
-* Windows is supported through MinGW or cygwin, with the caveat that it assumes
-  your terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
-  characters. (Git Bash and Cygwin's terminal should be fine though)
-	* Windows also generally doesn't have the `<fnmatch.h>` header. You can compile
-	  your tests with `-DSNOW_USE_FNMATCH=0` to disable fnmatch, or install
-	  [Gnulib](https://www.gnu.org/software/gnulib/) in Cygwin.
 * I really recommend running the test executable with
   [valgrind](http://valgrind.org/). That will help you find memory issues such
   as memory leaks, out of bounds array reads/writes, etc.
+* Windows is supported through MinGW or cygwin, with the caveat that it assumes
+  your terminal supports UTF-8. CMD.exe and Powershell will print mangled ✓ and ✕
+  characters. (Git Bash and Cygwin's terminal should be fine though)
+	* Windows also generally doesn't have the `<fnmatch.h>` header.
+	  Snow defaults to compile without fnmatch under MinGW
+		(and instead uses plain strcmp). You can control this with
+		`-DSNOW_USE_FNMATCH=1` or `-DSNOW_USE_FNMATCH=0`.
+		[Gnulib](https://www.gnu.org/software/gnulib/manual/gnulib.html)
+		implements fnmatch, and supports Windows under Cygwin.
 
 ## Usage
 
