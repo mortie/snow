@@ -32,8 +32,8 @@
 #define subdesc(...) while (0)
 #define it(...) while (0)
 #define defer while (0)
-#define before_each(...) while (0)
-#define after_each(...) while (0)
+#define before_each while (0)
+#define after_each while (0)
 #define snow_fail_update(...)
 #define snow_fail(...)
 #define fail(...)
@@ -251,6 +251,8 @@ struct _snow {
 	struct _snow_desc *current_desc;
 	struct _snow_opt opts[_SNOW_OPT_LAST];
 
+	int in_before;
+	int in_after;
 	int in_defer;
 	int in_case;
 	int rerunning_case;
@@ -672,8 +674,9 @@ static void _snow_desc_end() {
 		_snow_print_case_begin(); \
 		_snow.current_desc->num_tests += 1; \
 		if (_snow.current_desc->has_before_jmp) { \
-			if (setjmp(_snow.current_case.before_jmp_ret) == 0) \
+			if (setjmp(_snow.current_case.before_jmp_ret) == 0) { \
 				longjmp(_snow.current_desc->before_jmp, 1); \
+			} \
 		} \
 		/* Set jump point which _snow_case_end */ \
 		/* (and each defer) will jump back to */ \
@@ -681,10 +684,8 @@ static void _snow_desc_end() {
 			while (_snow.current_case.defers.length > 0) { \
 				if (setjmp(_snow.current_case.defer_jmp_ret) == 0) { \
 					jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers); \
-					_snow.in_defer = 1; \
 					longjmp(*jmp, 1); \
 				} \
-				_snow.in_defer = 0; \
 			} \
 			/* Run after_each */ \
 			if (_snow.current_desc->has_after_jmp) { \
@@ -1124,27 +1125,24 @@ cleanup:
 #define defer \
 	{ \
 		jmp_buf jmp; \
-		if (setjmp(jmp) == 0) \
+		_snow.in_defer = setjmp(jmp); \
+		if (!_snow.in_defer) \
 			_snow_case_defer_push(jmp); \
 	} \
 	for (int _snow_defer_done = 0; _snow.in_defer && !_snow_defer_done; \
 			(_snow_defer_done = 1, _snow_case_defer_jmp()))
 
-#define before_each() \
+#define before_each \
 	_snow.current_desc->has_before_jmp = 1; \
-	int _snow_run_before_each = setjmp(_snow.current_desc->before_jmp); \
-	for ( \
-			int _snow_before_each_done = 0; \
-			_snow_before_each_done == 0 && _snow_run_before_each; \
-			(_snow_before_each_done = 1, _snow_before_each_end()))
+	_snow.in_before = setjmp(_snow.current_desc->before_jmp); \
+	for (int _snow_before_done = 0; _snow_before_done == 0 && _snow.in_before; \
+			(_snow_before_done = 1, _snow_before_each_end()))
 
-#define after_each() \
+#define after_each \
 	_snow.current_desc->has_after_jmp = 1; \
-	int _snow_run_after_each = setjmp(_snow.current_desc->after_jmp); \
-	for ( \
-			int _snow_after_each_done = 0; \
-			_snow_after_each_done == 0 && _snow_run_after_each; \
-			(_snow_after_each_done = 1, _snow_after_each_end()))
+	_snow.in_after = setjmp(_snow.current_desc->after_jmp); \
+	for (int _snow_after_done = 0; _snow_after_done == 0 && _snow.in_after; \
+			(_snow_after_done = 1, _snow_after_each_end()))
 
 #define fail(...) \
 	do { \

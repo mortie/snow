@@ -16,11 +16,11 @@ describe(defer_basic) {
 }
 
 describe(defer_plus_around) {
-	before_each() {
+	before_each {
 		printf("Before Each\n");
 	}
 
-	after_each() {
+	after_each {
 		printf("After Each\n");
 	}
 

@@ -1,10 +1,10 @@
 #include <snow/snow.h>
 
 describe(a) {
-	before_each() {
+	before_each {
 		puts("A BEFORE");
 	}
-	after_each() {
+	after_each {
 		puts("A AFTER");
 	}
 	test("success") { assert(1); }
@@ -15,10 +15,10 @@ describe(b) {
 	test("success") { assert(1); }
 	test("failure") { assert(0); }
 	subdesc(bb) {
-		before_each() {
+		before_each {
 			puts("BB BEFORE");
 		}
-		after_each() {
+		after_each {
 			puts("BB AFTER");
 		}
 		test("success") { assert(1); }
@@ -27,13 +27,13 @@ describe(b) {
 }
 
 describe(c) {
-	before_each() {
+	before_each {
 		puts("C BEFORE");
 	}
 	test("success") { assert(1); }
 	test("failure") { assert(0); }
 	subdesc(cc) {
-		after_each() {
+		after_each {
 			puts("CC AFTER");
 		}
 		test("success") { assert(1); }
@@ -42,10 +42,10 @@ describe(c) {
 }
 
 describe(d) {
-	before_each() {
+	before_each {
 		puts("D BEFORE");
 	}
-	after_each() {
+	after_each {
 		puts("D AFTER");
 	}
 	test("success") { assert(1); }
@@ -57,19 +57,19 @@ describe(d) {
 }
 
 describe(e) {
-	before_each() {
+	before_each {
 		puts("E BEFORE");
 	}
-	after_each() {
+	after_each {
 		puts("E AFTER");
 	}
 	test("success") { assert(1); }
 	test("failure") { assert(0); }
 	subdesc(ee) {
-		before_each() {
+		before_each {
 			puts("EE BEFORE");
 		}
-		after_each() {
+		after_each {
 			puts("EE AFTER");
 		}
 		test("success") { assert(1); }
