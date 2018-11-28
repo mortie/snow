@@ -57,7 +57,7 @@ describe(vector) {
 		assert(1 == 2, "Oh noes!");
 	}
 
-	after_each() {
+	after_each {
 		vector_free(&vec);
 	}
 
@@ -70,7 +70,7 @@ describe(vector) {
 		asserteq(vec.size, 0);
 	}
 
-	before_each() {
+	before_each {
 		vector_init(&vec, sizeof(int));
 	}
 

@@ -10,9 +10,22 @@ If you have any questions, or just want to chat, just ping me (@mort) :)
 
 ![Screenshot](https://raw.githubusercontent.com/mortie/snow/master/img/screenshot.png)
 
-## Snow 2
+## Breaking changes
 
-Snow 2 is a complete rewrite of Snow. Here are the highlights:
+### Snow 3
+
+Snow 3 is a relatively small breaking change:
+
+* Parens have been removed from defer, so what used to be
+  `defer(free(whatever));` is now `defer free(whatever);`.
+* Blocks can now be deferred with `defer { free(whatever); }`.
+  (This was technically possible before too, but it was a bit awkward.)
+* Parens have been removed from before\_each and after\_each,
+  so what used to be `before_each() { ... }` is now `before_each { ... }`.
+
+### Snow 2
+
+Snow 2 is a complete rewrite from Snow 1. Here are the highlights:
 
 * Blocks have moved from inside of macro arguments (i.e `describe(foo, { ... })`)
   to outside of macro arguments (i.e `describe(foo) { ... }`). This applies to
@@ -96,14 +109,14 @@ describe(files) {
 	it("opens files") {
 		FILE *f = fopen("test", "r");
 		assertneq(f, NULL);
-		defer(fclose(f));
+		defer fclose(f);
 	}
 
 	it("writes to files") {
 		FILE *f = fopen("testfile", "w");
 		assertneq(f, NULL);
-		defer(remove("testfile"));
-		defer(fclose(f));
+		defer remove("testfile");
+		defer fclose(f);
 
 		char str[] = "hello there";
 		asserteq(fwrite(str, 1, sizeof(str), f), sizeof(str));
@@ -113,7 +126,7 @@ describe(files) {
 		it("reads 10 bytes") {
 			FILE *f = fopen("/dev/zero", "r");
 			assertneq(f, NULL);
-			defer(fclose(f));
+			defer fclose(f);
 
 			char buf[10];
 			asserteq(fread(buf, 1, 10, f), 10);
@@ -122,7 +135,7 @@ describe(files) {
 		it("reads 20 bytes") {
 			FILE *f = fopen("/dev/zero", "r");
 			assertneq(f, NULL);
-			defer(fclose(f));
+			defer fclose(f);
 
 			char buf[20];
 			asserteq(fread(buf, 1, 20, f), 20);
@@ -166,21 +179,21 @@ A particular test case. It can contain asserts and `defer`s, as well as just
 regular code. A failing assert (or direct call to `fail(...)`) will mark the
 test as failed, but if it completes normally, it's marked as successful.
 
-### defer(expr)
+### defer \<block>
 
 `defer` is used for tearing down, and is inspired by Go's [defer
 statement](https://gobyexample.com/defer).
 
 Once the test case completes, each deferred expression will be executed, in the
-reverse order of their definitions (i.e `defer(printf("World"));
-defer(printf("Hello "));` will print "Hello World"). If the test case fails,
+reverse order of their definitions (i.e `defer printf("World");
+defer printf("Hello ");` will print "Hello World"). If the test case fails,
 only deferred expressions defined before the point of failure will be executed.
 
-### before\_each() \<block>
+### before\_each \<block>
 
 Code to run before each test case.
 
-### after\_each() \<block>
+### after\_each \<block>
 
 Code to run after each test case.
 
