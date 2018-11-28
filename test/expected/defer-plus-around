@@ -1,0 +1,10 @@
+
+Testing defer_plus_around:
+Before Each
+✓ Success: a (1.00s)
+defer 3
+defer 2
+defer 1
+After Each
+defer_plus_around: Passed 1/1 tests. (3.00s)
+

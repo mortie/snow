@@ -264,16 +264,16 @@ describe(commandline) {
 
 	it("logs to the file specified with --log") {
 		int res = compareOutput("./cases/commandline --log tmpfile", "commandline-log-stdout");
-		defer(unlink("tmpfile"));
+		defer unlink("tmpfile");
 		assert(res);
 
 		FILE *f1 = fopen("tmpfile", "r");
 		assertneq(f1, NULL);
-		defer(fclose(f1));
+		defer fclose(f1);
 
 		FILE *f2 = fopen("./expected/commandline-log-output", "r");
 		assertneq(f2, NULL);
-		defer(fclose(f2));
+		defer fclose(f2);
 
 		assert(compareFiles(f1, f2));
 	}
@@ -320,6 +320,16 @@ describe(around) {
 
 	it("before_each and after_each in subdesc should shadow the parent") {
 		assert(compareOutput("./cases/around e", "around-subdesc-before-after-shadow"));
+	}
+}
+
+describe(defer) {
+	it("runs defers in reverse order") {
+		assert(compareOutput("./cases/defer defer_basic", "defer-basic"));
+	}
+
+	it("runs defers before after_each") {
+		assert(compareOutput("./cases/defer defer_plus_around", "defer-plus-around"));
 	}
 }
 

@@ -1,0 +1,12 @@
+
+Testing defer_basic:
+✓ Success: a (1.00s)
+defer 3
+defer 2
+defer 1
+✓ Success: b (1.00s)
+defer 3
+defer 2
+defer 1
+defer_basic: Passed 2/2 tests. (5.00s)
+

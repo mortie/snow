@@ -31,7 +31,7 @@
 #define describe(name) __attribute__((unused)) static void _snow_unused_##name()
 #define subdesc(...) while (0)
 #define it(...) while (0)
-#define defer(...)
+#define defer while (0)
 #define before_each(...) while (0)
 #define after_each(...) while (0)
 #define snow_fail_update(...)
@@ -251,6 +251,7 @@ struct _snow {
 	struct _snow_desc *current_desc;
 	struct _snow_opt opts[_SNOW_OPT_LAST];
 
+	int in_defer;
 	int in_case;
 	int rerunning_case;
 	struct {
@@ -680,8 +681,10 @@ static void _snow_desc_end() {
 			while (_snow.current_case.defers.length > 0) { \
 				if (setjmp(_snow.current_case.defer_jmp_ret) == 0) { \
 					jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers); \
+					_snow.in_defer = 1; \
 					longjmp(*jmp, 1); \
 				} \
+				_snow.in_defer = 0; \
 			} \
 			/* Run after_each */ \
 			if (_snow.current_desc->has_after_jmp) { \
@@ -1118,16 +1121,14 @@ cleanup:
 	for (; _snow.in_case; _snow_case_end(1))
 #define test it
 
-#define defer(...) \
-	do { \
-		jmp_buf _snow_jmp; \
-		if (setjmp(_snow_jmp) == 0) { \
-			_snow_case_defer_push(_snow_jmp); \
-		} else { \
-			__VA_ARGS__; \
-			_snow_case_defer_jmp(); \
-		} \
-	} while (0)
+#define defer \
+	{ \
+		jmp_buf jmp; \
+		if (setjmp(jmp) == 0) \
+			_snow_case_defer_push(jmp); \
+	} \
+	for (int _snow_defer_done = 0; _snow.in_defer && !_snow_defer_done; \
+			(_snow_defer_done = 1, _snow_case_defer_jmp()))
 
 #define before_each() \
 	_snow.current_desc->has_before_jmp = 1; \
