@@ -252,6 +252,8 @@ struct _snow {
 	struct _snow_opt opts[_SNOW_OPT_LAST];
 
 	int in_case;
+	int in_before_each;
+	int in_after_each;
 	int rerunning_case;
 	struct {
 		int success;
@@ -671,8 +673,11 @@ static void _snow_desc_end() {
 		_snow_print_case_begin(); \
 		_snow.current_desc->num_tests += 1; \
 		if (_snow.current_desc->has_before_jmp) { \
-			if (setjmp(_snow.current_case.before_jmp_ret) == 0) \
+			if (setjmp(_snow.current_case.before_jmp_ret) == 0) { \
+				_snow.in_before_each = 1; \
 				longjmp(_snow.current_desc->before_jmp, 1); \
+			} \
+			_snow.in_before_each = 0; \
 		} \
 		/* Set jump point which _snow_case_end */ \
 		/* (and each defer) will jump back to */ \
@@ -685,8 +690,11 @@ static void _snow_desc_end() {
 			} \
 			/* Run after_each */ \
 			if (_snow.current_desc->has_after_jmp) { \
-				if (setjmp(_snow.current_case.after_jmp_ret) == 0) \
+				if (setjmp(_snow.current_case.after_jmp_ret) == 0) { \
+					_snow.in_after_each = 1; \
 					longjmp(_snow.current_desc->after_jmp, 1); \
+				} \
+				_snow.in_after_each = 0; \
 			} \
 			/* Either re-run or just go back */ \
 			int should_rerun = _snow.opts[_SNOW_OPT_RERUN_FAILED].boolval && \
@@ -694,8 +702,11 @@ static void _snow_desc_end() {
 			if (should_rerun) { \
 				/* Run before_each again */ \
 				if (_snow.current_desc->has_before_jmp) { \
-					if (setjmp(_snow.current_case.before_jmp_ret) == 0) \
-					longjmp(_snow.current_desc->before_jmp, 1); \
+					if (setjmp(_snow.current_case.before_jmp_ret) == 0) { \
+						_snow.in_before_each = 1; \
+						longjmp(_snow.current_desc->before_jmp, 1); \
+					} \
+					_snow.in_before_each = 0; \
 				} \
 				/* Actually re-run */ \
 				_snow.rerunning_case = 1; \
@@ -1131,18 +1142,18 @@ cleanup:
 
 #define before_each() \
 	_snow.current_desc->has_before_jmp = 1; \
-	int _snow_run_before_each = setjmp(_snow.current_desc->before_jmp); \
+	setjmp(_snow.current_desc->before_jmp); \
 	for ( \
 			int _snow_before_each_done = 0; \
-			_snow_before_each_done == 0 && _snow_run_before_each; \
+			_snow_before_each_done == 0 && _snow.in_before_each; \
 			(_snow_before_each_done = 1, _snow_before_each_end()))
 
 #define after_each() \
 	_snow.current_desc->has_after_jmp = 1; \
-	int _snow_run_after_each = setjmp(_snow.current_desc->after_jmp); \
+	setjmp(_snow.current_desc->after_jmp); \
 	for ( \
 			int _snow_after_each_done = 0; \
-			_snow_after_each_done == 0 && _snow_run_after_each; \
+			_snow_after_each_done == 0 && _snow.in_after_each; \
 			(_snow_after_each_done = 1, _snow_after_each_end()))
 
 #define fail(...) \
