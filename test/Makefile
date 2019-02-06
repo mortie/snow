@@ -28,13 +28,13 @@ check:
 	@printf "\n*** Compiling and running with GCC...\n"
 	$(MAKE) clean
 	$(MAKE) CC=$(GCC) test-snow
-	./test-snow -q
+	valgrind $(VGFLAGS) ./test-snow -q
 	@printf "\n*** Compiling and running with Clang...\n"
 	$(MAKE) clean
 	$(MAKE) CC=$(CLANG) CFLAGS=" \
 		-Wincompatible-pointer-types-discards-qualifiers -Wmissing-prototypes -Wwrite-strings" \
 		test-snow
-	./test-snow -q
+	valgrind $(VGFLAGS) ./test-snow -q
 
 .PHONY: clean
 clean:
