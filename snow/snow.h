@@ -31,6 +31,7 @@
 #define describe(name) __attribute__((unused)) static void _snow_unused_##name()
 #define subdesc(...) while (0)
 #define it(...) while (0)
+#define test(...) while (0)
 #define defer(...)
 #define before_each(...) while (0)
 #define after_each(...) while (0)

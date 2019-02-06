@@ -166,6 +166,9 @@ A particular test case. It can contain asserts and `defer`s, as well as just
 regular code. A failing assert (or direct call to `fail(...)`) will mark the
 test as failed, but if it completes normally, it's marked as successful.
 
+`test(description) <block>` is an alias, for cases where using `it` would read
+awkwardly.
+
 ### defer(expr)
 
 `defer` is used for tearing down, and is inspired by Go's [defer
