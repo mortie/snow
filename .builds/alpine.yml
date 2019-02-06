@@ -1,0 +1,12 @@
+image: freebsd
+packages:
+- gcc
+- clag
+- valgrind
+sources:
+- https://github.com/mortie/snow.git
+tasks:
+- checkout: |
+    make -C test snow/.git
+- test: |
+    make -C test check
