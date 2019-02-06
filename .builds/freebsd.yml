@@ -1,7 +1,7 @@
 image: alpine/edge
 packages:
 - gcc
-- clag
+- clang
 - valgrind
 sources:
 - https://github.com/mortie/snow.git

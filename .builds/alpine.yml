@@ -1,12 +1,13 @@
 image: freebsd
 packages:
 - gcc
-- clag
+- clang
 - valgrind
+- gmake
 sources:
 - https://github.com/mortie/snow.git
 tasks:
 - checkout: |
-    make -C test snow/.git
+    gmake -C test snow/.git
 - test: |
-    make -C test check
+    gmake -C test check
