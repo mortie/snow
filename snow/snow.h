@@ -1163,11 +1163,14 @@ cleanup:
 		snow_fail(__VA_ARGS__); \
 	} while (0)
 
-#define snow_main() \
+#define snow_main_decls \
 	void snow_break() {} \
 	void snow_rerun_failed() {} \
 	struct _snow _snow; \
-	int _snow_inited = 0; \
+	int _snow_inited = 0
+
+#define snow_main() \
+	snow_main_decls; \
 	int main(int argc, char **argv) { \
 		return snow_main_function(argc, argv); \
 	} \

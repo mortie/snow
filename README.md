@@ -193,6 +193,19 @@ This macro expands to a main function which handless stuff like parsing
 arguments and freeing memory allocated by Snow. All described functions will
 automatically be called by the main functions.
 
+If you want more control over the main function, you can use the
+`snow_main_decls` macro to create the necessary global variables and functions,
+and then call the `snow_main_function(int argc, char **argv)` function.
+
+This is essentially how `snow_main()` works:
+
+``` C
+snow_main_decls;
+int main(int argc, char **argv) {
+	return snow_main_function(argc, argv);
+}
+```
+
 ## Assert Macros
 
 ### fail(fmt, ...)
