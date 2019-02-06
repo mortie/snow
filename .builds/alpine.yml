@@ -1,13 +1,12 @@
-image: freebsd
+image: alpine/edge
 packages:
 - gcc
 - clang
 - valgrind
-- gmake
 sources:
 - https://github.com/mortie/snow.git
 tasks:
 - checkout: |
-    gmake -C test snow/.git
+    make -C snow/test snow/.git
 - test: |
-    gmake -C test check
+    make -C snow/test check
