@@ -13,7 +13,7 @@
 // This is relatively horrible and does no escaping,
 // so make sure that 'str' doesn't contain a single quote, k?
 // It's here because we want to use sh even on Windows under mingw.
-static FILE *runcmd(char *str)
+static FILE *runcmd(const char *str)
 {
 	char command[512];
 	snprintf(command, sizeof(command) - 1, "sh -c '%s'", str);
@@ -21,7 +21,7 @@ static FILE *runcmd(char *str)
 	return popen(command, "r");
 }
 
-static int bufeq(char *b1, char *b2, size_t len)
+static int bufeq(const char *b1, const char *b2, size_t len)
 {
 	for (size_t i = 0; i < len; ++i)
 		if (b1[i] != b2[i])
@@ -104,7 +104,7 @@ static int compareFiles(FILE *f1, FILE *f2)
  * Compare a command's output to a file.
  * 1 means they're the same, 0 means they're different.
  */
-static int compareOutput(char *cmd, char *expected)
+static int compareOutput(const char *cmd, const char *expected)
 {
 	FILE *f1 = runcmd(cmd);
 

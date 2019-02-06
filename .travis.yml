@@ -2,21 +2,14 @@ language: generic
 matrix:
     include:
         - os: linux
-          env: CC=gcc-5
+          env: GCC=gcc-5 CLANG=clang-3.8
           addons:
               apt:
                   packages:
                       - gcc-5
+                      - clang-3.8
                       - valgrind
                   sources:
                       - llvm-toolchain-precise-3.8
                       - ubuntu-toolchain-r-test
-        - os: linux
-          env: CC=clang-3.8
-          addons:
-              apt:
-                  packages:
-                      - clang-3.8
-                      - valgrind
-                  sources: *sources
-script: make -C test test
+script: make -C test check
