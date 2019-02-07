@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/mortie/snow.svg?branch=master)](https://travis-ci.org/mortie/snow)
+FreeBSD: [![builds.sr.ht status](https://builds.sr.ht/~mort/snow/freebsd.yml.svg)](https://builds.sr.ht/~mort/snow/freebsd.yml?)
+Debian: [![builds.sr.ht status](https://builds.sr.ht/~mort/snow/linux.yml.svg)](https://builds.sr.ht/~mort/snow/linux.yml?)
+Travis: [![Build Status](https://travis-ci.org/mortie/snow.svg?branch=master)](https://travis-ci.org/mortie/snow)
 
 # Snow
 
