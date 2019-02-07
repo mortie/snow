@@ -1,4 +1,4 @@
-image: alpine/edge
+image: debian/stable
 packages:
 - gcc
 - clang
