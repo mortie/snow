@@ -1,0 +1,12 @@
+image: freebsd
+packages:
+- gcc
+- valgrind
+- gmake
+sources:
+- https://github.com/mortie/snow.git
+tasks:
+- checkout: |
+    gmake -C snow/test snow/.git
+- test: |
+    gmake -C snow/test check

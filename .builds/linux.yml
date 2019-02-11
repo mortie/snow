@@ -1,0 +1,12 @@
+image: debian/stable
+packages:
+- gcc
+- clang
+- valgrind
+sources:
+- https://github.com/mortie/snow.git
+tasks:
+- checkout: |
+    make -C snow/test snow/.git
+- test: |
+    make -C snow/test check
