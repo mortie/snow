@@ -615,7 +615,7 @@ static void _snow_desc_begin(const char *name) {
 
 			// Use fnmatch to do glob matching if that's enabled,
 			// otherwise just compare with strcmp
-#if SNOW_USE_FNMATCH == 1
+#if SNOW_USE_FNMATCH != 0
 			int fm = fnmatch(pattern, desc.full_name, 0);
 			matched = fm == 0;
 			error = !matched && fm != FNM_NOMATCH;
