@@ -23,8 +23,8 @@ version="$(echo "$tag" | sed 's/^v//')"
 
 # Update files
 strreplace -i -- \
-	"git checkout $prevtag" \
-	"git checkout $tag" \
+	"cd snow && git checkout $prevtag" \
+	"cd snow && git checkout $tag" \
 	"test/Makefile"
 strreplace -i -- \
 	"Snow $prevversion" \
@@ -34,8 +34,11 @@ strreplace -i -- \
 	"#define SNOW_VERSION \"$prevversion\"" \
 	"#define SNOW_VERSION \"$version\"" \
 	"snow/snow.h"
-git add "test/Makefile" "test/expected/commandline-version" "snow/snow.h"
+
 git diff
+echo "Press enter to commit $version."
+read
+git add "test/Makefile" "test/expected/commandline-version" "snow/snow.h"
 git commit -m "release $version"
 
 # Prepare template for tag message
