@@ -64,23 +64,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
-#include <sys/wait.h>
 #include <setjmp.h>
 #include <unistd.h>
 #include <stdint.h>
 
 #ifdef __MINGW32__
 # ifndef SNOW_USE_FNMATCH
-# define SNOW_USE_FNMATCH 0
+#  define SNOW_USE_FNMATCH 0
+# endif
+# ifndef SNOW_USE_FORK
+#  define SNOW_USE_FORK 0
 # endif
 #else
 # ifndef SNOW_USE_FNMATCH
-# define SNOW_USE_FNMATCH 1
+#  define SNOW_USE_FNMATCH 1
+# endif
+# ifndef SNOW_USE_FORK
+#  define SNOW_USE_FORK 1
 # endif
 #endif
 
-#if SNOW_USE_FNMATCH == 1
+#if SNOW_USE_FNMATCH != 0
 #include <fnmatch.h>
+#endif
+
+#if SNOW_USE_FORK != 0
+#include <sys/wait.h>
 #endif
 
 #define SNOW_VERSION "2.3.0"
@@ -944,8 +953,8 @@ static int snow_main_function(int argc, char **argv) {
 
 	// If --gdb was passed, re-run under GDB
 	if (_snow.opts[_SNOW_OPT_GDB].boolval) {
-#ifdef __MINGW32__
-		fprintf(stderr, "Running under GDB is not supported with mingw.");
+#if SNOW_USE_FORK == 0
+		fprintf(stderr, "Can't run GDB, because SNOW_USE_FORK is 0.");
 		_snow.exit_code = EXIT_FAILURE;
 		goto cleanup;
 #else
