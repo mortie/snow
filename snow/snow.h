@@ -1260,9 +1260,9 @@ static int _snow_assert_fake(int invert, ...) {
 	return -1;
 }
 
-// In mingw, size_t is compatible with unsigned int, and
+// In mingw and on ARM, size_t is compatible with unsigned int, and
 // ssize_t is compatible with int
-#ifdef __MINGW32__
+#if(__SIZEOF_SIZE_T__ == __SIZEOF_INT__)
 #define _snow_generic_assert(x) \
 	_Generic((x), \
 		float: _snow_assert_dbl, \
