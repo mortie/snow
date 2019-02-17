@@ -1122,6 +1122,7 @@ cleanup:
 		struct _snow_desc_func df = { #name, &snow_test_##name }; \
 		_snow_arr_push(&_snow.desc_funcs, &df); \
 	} \
+	__attribute__((optnone)) \
 	static void snow_test_##name()
 
 #define subdesc(name) \
