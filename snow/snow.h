@@ -836,6 +836,14 @@ static void _snow_usage(char *argv0) {
 		"    --gdb, -g:      Run the test suite on GDB, and break and re-run\n"
 		"                    test cases which fail.\n"
 		"                    Default: off.\n");
+    char *default_args[] = { "snow", SNOW_DEFAULT_ARGS };
+    if (sizeof(default_args) > sizeof(char *) * 1) {
+        _snow_print("\nCompiled with default arguments:");
+        for (int i = 0; i < sizeof(default_args)/sizeof(char *); ++i) {
+            _snow_print(" %s", default_args[i]);
+        }
+        _snow_print("\n");
+    }
 }
 
 /*
