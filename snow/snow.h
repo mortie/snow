@@ -130,6 +130,10 @@
 #define SNOW_COLOR_DESC SNOW_COLOR_BOLD "\033[33m"
 #endif
 
+#ifndef SNOW_DEFAULT_ARGS
+#define SNOW_DEFAULT_ARGS
+#endif
+
 /*
  * Array
  */
@@ -836,24 +840,14 @@ static void _snow_usage(char *argv0)
 }
 
 /*
- * The main function, which runs all top-level describes
- * and cleans up.
+ * Parse a single argument
  */
 __attribute__((unused))
-static int snow_main_function(int argc, char **argv) {
-
-	// There might be no tests, so we should init _snow here too
-	if (!_snow_inited)
-		_snow_init();
-
-	/*
-	 * Parse arguments
-	 */
-
+int _snow_parse_args(char **args, int num)
+{
 	int opts_done = 0;
-	for (int i = 1; i < argc; ++i) {
-		char *arg = argv[i];
-
+	for (int i = 1; i < num; ++i) {
+		char *arg = args[i];
 		if (opts_done || arg[0] != '-') {
 			_snow_arr_push(&_snow.desc_patterns, &arg);
 			continue;
@@ -884,12 +878,12 @@ static int snow_main_function(int argc, char **argv) {
 					break;
 				}
 
-				if (i + 1 >= argc ) {
+				if (i + 1 >= num) {
 					fprintf(stderr, "%s: Argument expected.", arg);
 					return EXIT_FAILURE;
 				}
 
-				opt->strval = argv[++i];
+				opt->strval = args[++i];
 			}
 
 			break;
@@ -900,6 +894,34 @@ static int snow_main_function(int argc, char **argv) {
 			return EXIT_FAILURE;
 		}
 	}
+
+	return 0;
+}
+
+/*
+ * The main function, which runs all top-level describes
+ * and cleans up.
+ */
+
+__attribute__((unused))
+static int snow_main_function(int argc, char **argv) {
+
+	// There might be no tests, so we should init _snow here too
+	if (!_snow_inited)
+		_snow_init();
+
+	/*
+	 * Parse arguments
+	 */
+	int res;
+	char *default_args[] = { "snow", SNOW_DEFAULT_ARGS };
+	res = _snow_parse_args(argv, argc);
+	if (res != 0)
+		return res;
+
+	res = _snow_parse_args(default_args, sizeof(default_args)/sizeof(char *));
+	if (res != 0)
+		return res;
 
 	/*
 	 * Respond to args
