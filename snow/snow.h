@@ -839,7 +839,7 @@ static void _snow_usage(char *argv0) {
     char *default_args[] = { "snow", SNOW_DEFAULT_ARGS };
     if (sizeof(default_args) > sizeof(char *) * 1) {
         _snow_print("\nCompiled with default arguments:");
-        for (int i = 0; i < sizeof(default_args)/sizeof(char *); ++i) {
+        for (int i = 1; i < sizeof(default_args)/sizeof(char *); ++i) {
             _snow_print(" %s", default_args[i]);
         }
         _snow_print("\n");
@@ -850,7 +850,7 @@ static void _snow_usage(char *argv0) {
  * Parse a single argument
  */
 __attribute__((unused))
-int _snow_parse_args(char **args, int num) {
+static int _snow_parse_args(char **args, int num) {
 	int opts_done = 0;
 	for (int i = 1; i < num; ++i) {
 		char *arg = args[i];
