@@ -915,11 +915,11 @@ static int snow_main_function(int argc, char **argv) {
 	 */
 	int res;
 	char *default_args[] = { "snow", SNOW_DEFAULT_ARGS };
-	res = _snow_parse_args(argv, argc);
+	res = _snow_parse_args(default_args, sizeof(default_args)/sizeof(char *));
 	if (res != 0)
 		return res;
 
-	res = _snow_parse_args(default_args, sizeof(default_args)/sizeof(char *));
+	res = _snow_parse_args(argv, argc);
 	if (res != 0)
 		return res;
 
