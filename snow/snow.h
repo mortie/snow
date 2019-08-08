@@ -793,8 +793,7 @@ static void _snow_after_each_end(void) {
  * Usage
  */
 __attribute__((unused))
-static void _snow_usage(char *argv0)
-{
+static void _snow_usage(char *argv0) {
 	_snow_print("Usage: %s [options]            Run all tests.\n", argv0);
 	_snow_print("       %s [options] <test>...  Run specific tests.\n", argv0);
 	_snow_print("       %s -v|--version         Print version and exit.\n", argv0);
@@ -843,8 +842,7 @@ static void _snow_usage(char *argv0)
  * Parse a single argument
  */
 __attribute__((unused))
-int _snow_parse_args(char **args, int num)
-{
+int _snow_parse_args(char **args, int num) {
 	int opts_done = 0;
 	for (int i = 1; i < num; ++i) {
 		char *arg = args[i];
