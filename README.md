@@ -146,6 +146,8 @@ snow_main();
   description.
 * **SNOW\_COLOR\_BOLD**: The escape sequence for bold text.
 * **SNOW\_COLOR\_RESET**: The escape sequence to reset formatting.
+* **SNOW\_DEFAULT\_ARGS**: A comma seperated list of strings to pass as
+  arguments to snow before the command-line arguments.
 
 ## Structure Macros
 
