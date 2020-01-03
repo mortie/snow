@@ -1221,9 +1221,9 @@ cleanup:
 #define assert(x, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
+		const char *_snow_explanation = "" expl; \
 		if (!(x)) \
-			_snow_fail_expl(explanation, "Assertion failed: %s", #x); \
+			_snow_fail_expl(_snow_explanation, "Assertion failed: %s", #x); \
 	} while (0)
 
 /*
@@ -1364,7 +1364,7 @@ static int _snow_assert_fake(int invert, ...) {
 #define asserteq_any(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
+		const char *_snow_explanation = "" expl; \
 		_Pragma("GCC diagnostic push") \
 		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
 		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
@@ -1373,12 +1373,12 @@ static int _snow_assert_fake(int invert, ...) {
 		typeof ((b)+0) _b = b; \
 		_Pragma("GCC diagnostic pop") \
 		if (sizeof(a) != sizeof(b)) { \
-			_snow_fail_expl(explanation, \
+			_snow_fail_expl(_snow_explanation, \
 				"Expected %s to equal %s, but their lengths don't match", \
 				#a, #b); \
 		} else { \
 			_snow_assert_buf( \
-				0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				0, _snow_explanation, &_a, #a, &_b, #b, sizeof(_a)); \
 		} \
 	} while (0)
 
@@ -1425,7 +1425,7 @@ static int _snow_assert_fake(int invert, ...) {
 #define assertneq_any(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
+		const char *_snow_explanation = "" expl; \
 		_Pragma("GCC diagnostic push") \
 		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
 		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
@@ -1437,7 +1437,7 @@ static int _snow_assert_fake(int invert, ...) {
 			break; \
 		} else { \
 			_snow_assert_buf( \
-				1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				1, _snow_explanation, &_a, #a, &_b, #b, sizeof(_a)); \
 		} \
 	} while (0)
 
@@ -1448,10 +1448,10 @@ static int _snow_assert_fake(int invert, ...) {
 #define asserteq(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
-		int ret = _snow_generic_assert(b)( \
-			0, explanation, (a), #a, (b), #b); \
-		if (ret < 0) { \
+		const char *_snow_explanation = "" expl; \
+		int _snow_ret = _snow_generic_assert(b)( \
+			0, _snow_explanation, (a), #a, (b), #b); \
+		if (_snow_ret < 0) { \
 			asserteq_any(a, b, expl); \
 		} \
 	} while (0)
@@ -1463,10 +1463,10 @@ static int _snow_assert_fake(int invert, ...) {
 #define assertneq(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
-		int ret = _snow_generic_assert(b)( \
-			1, explanation, (a), #a, (b), #b); \
-		if (ret < 0) { \
+		const char *_snow_explanation = "" expl; \
+		int _snow_ret = _snow_generic_assert(b)( \
+			1, _snow_explanation, (a), #a, (b), #b); \
+		if (_snow_ret < 0) { \
 			assertneq_any(a, b, expl); \
 		} \
 } while (0)
