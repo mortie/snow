@@ -92,7 +92,7 @@
 #include <sys/wait.h>
 #endif
 
-#define SNOW_VERSION "2.3.1"
+#define SNOW_VERSION "2.3.2"
 
 // Eventually, I want to re-implement optional explanation arguments
 // for assert macros to make this unnecessary.
