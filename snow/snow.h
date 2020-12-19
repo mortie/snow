@@ -1007,6 +1007,9 @@ static int snow_main_function(int argc, char **argv) {
 		}
 		args[idx++] = NULL;
 
+		// GDB handles SIGINT
+		signal(SIGINT, SIG_IGN);
+
 		// Fork
 		pid_t child = fork();
 		if (child < 0) {
@@ -1017,6 +1020,7 @@ static int snow_main_function(int argc, char **argv) {
 
 		// Child
 		if (child == 0) {
+			signal(SIGINT, SIG_DFL);
 			if (execvp("gdb", args) < 0) {
 				perror("gdb");
 			} else {
