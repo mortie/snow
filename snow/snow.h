@@ -92,7 +92,7 @@
 #include <sys/wait.h>
 #endif
 
-#define SNOW_VERSION "2.3.1"
+#define SNOW_VERSION "2.3.2"
 
 // Eventually, I want to re-implement optional explanation arguments
 // for assert macros to make this unnecessary.
@@ -128,6 +128,10 @@
 
 #ifndef SNOW_COLOR_DESC
 #define SNOW_COLOR_DESC SNOW_COLOR_BOLD "\033[33m"
+#endif
+
+#ifndef SNOW_DEFAULT_ARGS
+#define SNOW_DEFAULT_ARGS
 #endif
 
 /*
@@ -789,8 +793,7 @@ static void _snow_after_each_end(void) {
  * Usage
  */
 __attribute__((unused))
-static void _snow_usage(char *argv0)
-{
+static void _snow_usage(char *argv0) {
 	_snow_print("Usage: %s [options]            Run all tests.\n", argv0);
 	_snow_print("       %s [options] <test>...  Run specific tests.\n", argv0);
 	_snow_print("       %s -v|--version         Print version and exit.\n", argv0);
@@ -833,27 +836,24 @@ static void _snow_usage(char *argv0)
 		"    --gdb, -g:      Run the test suite on GDB, and break and re-run\n"
 		"                    test cases which fail.\n"
 		"                    Default: off.\n");
+    char *default_args[] = { "snow", SNOW_DEFAULT_ARGS };
+    if (sizeof(default_args) > sizeof(char *) * 1) {
+        _snow_print("\nCompiled with default arguments:");
+        for (int i = 1; i < sizeof(default_args)/sizeof(char *); ++i) {
+            _snow_print(" %s", default_args[i]);
+        }
+        _snow_print("\n");
+    }
 }
 
 /*
- * The main function, which runs all top-level describes
- * and cleans up.
+ * Parse a single argument
  */
 __attribute__((unused))
-static int snow_main_function(int argc, char **argv) {
-
-	// There might be no tests, so we should init _snow here too
-	if (!_snow_inited)
-		_snow_init();
-
-	/*
-	 * Parse arguments
-	 */
-
+static int _snow_parse_args(char **args, int num) {
 	int opts_done = 0;
-	for (int i = 1; i < argc; ++i) {
-		char *arg = argv[i];
-
+	for (int i = 1; i < num; ++i) {
+		char *arg = args[i];
 		if (opts_done || arg[0] != '-') {
 			_snow_arr_push(&_snow.desc_patterns, &arg);
 			continue;
@@ -884,12 +884,12 @@ static int snow_main_function(int argc, char **argv) {
 					break;
 				}
 
-				if (i + 1 >= argc ) {
+				if (i + 1 >= num) {
 					fprintf(stderr, "%s: Argument expected.", arg);
 					return EXIT_FAILURE;
 				}
 
-				opt->strval = argv[++i];
+				opt->strval = args[++i];
 			}
 
 			break;
@@ -900,6 +900,34 @@ static int snow_main_function(int argc, char **argv) {
 			return EXIT_FAILURE;
 		}
 	}
+
+	return 0;
+}
+
+/*
+ * The main function, which runs all top-level describes
+ * and cleans up.
+ */
+
+__attribute__((unused))
+static int snow_main_function(int argc, char **argv) {
+
+	// There might be no tests, so we should init _snow here too
+	if (!_snow_inited)
+		_snow_init();
+
+	/*
+	 * Parse arguments
+	 */
+	int res;
+	char *default_args[] = { "snow", SNOW_DEFAULT_ARGS };
+	res = _snow_parse_args(default_args, sizeof(default_args)/sizeof(char *));
+	if (res != 0)
+		return res;
+
+	res = _snow_parse_args(argv, argc);
+	if (res != 0)
+		return res;
 
 	/*
 	 * Respond to args
@@ -1197,9 +1225,9 @@ cleanup:
 #define assert(x, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
+		const char *_snow_explanation = "" expl; \
 		if (!(x)) \
-			_snow_fail_expl(explanation, "Assertion failed: %s", #x); \
+			_snow_fail_expl(_snow_explanation, "Assertion failed: %s", #x); \
 	} while (0)
 
 /*
@@ -1265,9 +1293,9 @@ static int _snow_assert_fake(int invert, ...) {
 	return -1;
 }
 
-// In mingw, size_t is compatible with unsigned int, and
+// In mingw and on ARM, size_t is compatible with unsigned int, and
 // ssize_t is compatible with int
-#ifdef __MINGW32__
+#if(__SIZEOF_SIZE_T__ == __SIZEOF_INT__)
 #define _snow_generic_assert(x) \
 	_Generic((x), \
 		float: _snow_assert_dbl, \
@@ -1340,7 +1368,7 @@ static int _snow_assert_fake(int invert, ...) {
 #define asserteq_any(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
+		const char *_snow_explanation = "" expl; \
 		_Pragma("GCC diagnostic push") \
 		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
 		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
@@ -1349,12 +1377,12 @@ static int _snow_assert_fake(int invert, ...) {
 		typeof ((b)+0) _b = b; \
 		_Pragma("GCC diagnostic pop") \
 		if (sizeof(_a) != sizeof(_b)) { \
-			_snow_fail_expl(explanation, \
+			_snow_fail_expl(_snow_explanation, \
 				"Expected %s to equal %s, but their lengths don't match", \
 				#a, #b); \
 		} else { \
 			_snow_assert_buf( \
-				0, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				0, _snow_explanation, &_a, #a, &_b, #b, sizeof(_a)); \
 		} \
 	} while (0)
 
@@ -1401,7 +1429,7 @@ static int _snow_assert_fake(int invert, ...) {
 #define assertneq_any(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
+		const char *_snow_explanation = "" expl; \
 		_Pragma("GCC diagnostic push") \
 		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
 		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
@@ -1413,7 +1441,7 @@ static int _snow_assert_fake(int invert, ...) {
 			break; \
 		} else { \
 			_snow_assert_buf( \
-				1, explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				1, _snow_explanation, &_a, #a, &_b, #b, sizeof(_a)); \
 		} \
 	} while (0)
 
@@ -1424,10 +1452,10 @@ static int _snow_assert_fake(int invert, ...) {
 #define asserteq(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
-		int ret = _snow_generic_assert(b)( \
-			0, explanation, (a), #a, (b), #b); \
-		if (ret < 0) { \
+		const char *_snow_explanation = "" expl; \
+		int _snow_ret = _snow_generic_assert(b)( \
+			0, _snow_explanation, (a), #a, (b), #b); \
+		if (_snow_ret < 0) { \
 			asserteq_any(a, b, expl); \
 		} \
 	} while (0)
@@ -1439,10 +1467,10 @@ static int _snow_assert_fake(int invert, ...) {
 #define assertneq(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *explanation = "" expl; \
-		int ret = _snow_generic_assert(b)( \
-			1, explanation, (a), #a, (b), #b); \
-		if (ret < 0) { \
+		const char *_snow_explanation = "" expl; \
+		int _snow_ret = _snow_generic_assert(b)( \
+			1, _snow_explanation, (a), #a, (b), #b); \
+		if (_snow_ret < 0) { \
 			assertneq_any(a, b, expl); \
 		} \
 } while (0)

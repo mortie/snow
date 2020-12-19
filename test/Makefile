@@ -15,7 +15,7 @@ cases/%: cases/%.c ../snow/snow.h
 
 snow/.git:
 	git clone -b experimentation https://github.com/mortie/snow.git snow
-	cd snow && git checkout v2.3.1
+	cd snow && git checkout v2.3.2
 
 .PHONY: test
 test: test-snow

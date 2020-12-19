@@ -37,7 +37,7 @@ strreplace -i -- \
 
 git diff
 echo "Press enter to commit $version."
-read
+read _
 git add "test/Makefile" "test/expected/commandline-version" "snow/snow.h"
 git commit -m "release $version"
 
@@ -58,7 +58,7 @@ echo "Message:"
 cat "$tmp" | grep -v '^#'
 echo
 echo "Press enter to push, ^C to cancel."
-read
+read _
 
 git tag -a "$tag" -F "$tmp"
 git push --tags
