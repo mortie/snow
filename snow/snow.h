@@ -1376,7 +1376,7 @@ static int _snow_assert_fake(int invert, ...) {
 		typeof ((a)+0) _a = a; \
 		typeof ((b)+0) _b = b; \
 		_Pragma("GCC diagnostic pop") \
-		if (sizeof(_a) != sizeof(_b)) { \
+		if (sizeof(_a) != sizeof(_b)) { /* NOLINT */ \
 			_snow_fail_expl(_snow_explanation, \
 				"Expected %s to equal %s, but their lengths don't match", \
 				#a, #b); \
@@ -1437,7 +1437,7 @@ static int _snow_assert_fake(int invert, ...) {
 		typeof ((a)+0) _a = a; \
 		typeof ((b)+0) _b = b; \
 		_Pragma("GCC diagnostic pop") \
-		if (sizeof(_a) != sizeof(_b)) { \
+		if (sizeof(_a) != sizeof(_b)) { /* NOLINT */ \
 			break; \
 		} else { \
 			_snow_assert_buf( \
