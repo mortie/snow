@@ -90,6 +90,7 @@
 
 #if SNOW_USE_FORK != 0
 #include <sys/wait.h>
+#include <sys/types.h>
 #endif
 
 #define SNOW_VERSION "2.3.2"
