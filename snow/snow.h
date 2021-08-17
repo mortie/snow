@@ -28,7 +28,8 @@
 
 #ifndef SNOW_ENABLED
 
-#define describe(name) __attribute__((unused)) static void _snow_unused_##name()
+#define describe(name) \
+    __attribute__((unused)) static void _snow_unused_##name(void)
 #define subdesc(...) while (0)
 #define it(...) while (0)
 #define test(...) while (0)
@@ -1148,15 +1149,15 @@ cleanup:
  */
 
 #define describe(name) \
-	static void snow_test_##name(); \
+	static void snow_test_##name(void); \
 	__attribute__((constructor (__COUNTER__ + 101))) \
-	static void _snow_constructor_##name() { \
+	static void _snow_constructor_##name(void) { \
 		if (!_snow_inited) _snow_init(); \
 		struct _snow_desc_func df = { #name, &snow_test_##name }; \
 		_snow_arr_push(&_snow.desc_funcs, &df); \
 	} \
 	__attribute__((optnone)) \
-	static void snow_test_##name()
+	static void snow_test_##name(void)
 
 #define subdesc(name) \
 	_snow_desc_begin(#name); \
@@ -1207,8 +1208,8 @@ cleanup:
 	} while (0)
 
 #define snow_main_decls \
-	void snow_break() {} \
-	void snow_rerun_failed() {} \
+	void snow_break(void) {} \
+	void snow_rerun_failed(void) {} \
 	struct _snow _snow; \
 	int _snow_inited = 0
 
