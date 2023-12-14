@@ -102,6 +102,9 @@
 // This is necessary unless I can avoid using `typeof`
 #pragma GCC diagnostic ignored "-Wlanguage-extension-token"
 
+// This is required to calm GCC about __attribute__((optnone))
+#pragma GCC diagnostic ignored "-Wattributes"
+
 /*
  * Colors
  */
@@ -1155,6 +1158,7 @@ cleanup:
 		_snow_arr_push(&_snow.desc_funcs, &df); \
 	} \
 	__attribute__((optnone)) \
+	__attribute__((optimize(0))) \
 	static void snow_test_##name()
 
 #define subdesc(name) \
