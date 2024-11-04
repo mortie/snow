@@ -257,6 +257,12 @@ struct _snow_desc_func {
 	void (*func)(void);
 };
 
+struct _snow_explanation {
+	const char *description;
+	const char *filename;
+	int linenum;
+};
+
 struct _snow {
 	int exit_code;
 	const char *filename;
@@ -535,12 +541,17 @@ static void _snow_print_desc_end(void) {
 		_snow_case_end(0); \
 	} while (0)
 
+#define _snow_explain(...) \
+	(struct _snow_explanation){ "" __VA_ARGS__, __FILE__, __LINE__ }
+
 #define _snow_fail_expl(expl, fmt, ...) \
 	do { \
-		if (expl[0] == '\0') { \
+		_snow.filename = expl.filename; \
+		_snow.linenum = expl.linenum; \
+		if (expl.description[0] == '\0') { \
 			snow_fail(fmt ".", __VA_ARGS__); \
 		} else { \
-			snow_fail(fmt ": %s", __VA_ARGS__, expl); \
+			snow_fail(fmt ": %s", __VA_ARGS__, expl.description); \
 		} \
 	} while (0)
 
@@ -1228,10 +1239,8 @@ cleanup:
 
 #define assert(x, expl...) \
 	do { \
-		snow_fail_update(); \
-		const char *_snow_explanation = "" expl; \
 		if (!(x)) \
-			_snow_fail_expl(_snow_explanation, "Assertion failed: %s", #x); \
+			_snow_fail_expl(_snow_explain(expl), "Assertion failed: %s", #x); \
 	} while (0)
 
 /*
@@ -1241,7 +1250,7 @@ cleanup:
 #define _snow_define_assertfunc(name, type, pattern) \
 	__attribute__((unused)) \
 	static int _snow_assert_##name( \
-			int invert, const char *explanation, \
+			int invert, struct _snow_explanation explanation, \
 			const type a, const char *astr, const type b, const char *bstr) { \
 		int eq = (a) == (b); \
 		if (!eq && !invert) \
@@ -1261,7 +1270,7 @@ _snow_define_assertfunc(ptr, void *, "%p")
 
 __attribute__((unused))
 static int _snow_assert_str(
-		int invert, const char *explanation,
+		int invert, struct _snow_explanation explanation,
 		const char *a, const char *astr, const char *b, const char *bstr) {
 	int eq = strcmp(a, b) == 0;
 	if (!eq && !invert)
@@ -1277,7 +1286,7 @@ static int _snow_assert_str(
 
 __attribute__((unused))
 static int _snow_assert_buf(
-		int invert, const char *explanation,
+		int invert, struct _snow_explanation explanation,
 		const void *a, const char *astr, const void *b, const char *bstr, size_t size)
 {
 	int eq = memcmp(a, b, size) == 0;
@@ -1335,44 +1344,37 @@ static int _snow_assert_fake(int invert, ...) {
 
 #define asserteq_dbl(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_dbl( \
-			0, "" expl, (a), #a, (b), #b); \
+			0, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define asserteq_ptr(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_ptr( \
-			0, "" expl, (a), #a, (b), #b); \
+			0, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define asserteq_str(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_str( \
-			0, "" expl, (a), #a, (b), #b); \
+			0, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define asserteq_int(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_int( \
-			0, "" expl, (a), #a, (b), #b); \
+			0, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define asserteq_uint(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_uint( \
-			0, "" expl, (a), #a, (b), #b); \
+			0, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define asserteq_buf(a, b, size, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_buf( \
-			0, "" expl, (a), #a, (b), #b, size); \
+			0, _snow_explain(expl), (a), #a, (b), #b, size); \
 	} while (0)
 #define asserteq_any(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *_snow_explanation = "" expl; \
 		_Pragma("GCC diagnostic push") \
 		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
 		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
@@ -1381,12 +1383,12 @@ static int _snow_assert_fake(int invert, ...) {
 		typeof ((b)+0) _b = b; \
 		_Pragma("GCC diagnostic pop") \
 		if (sizeof(_a) != sizeof(_b)) { /* NOLINT */ \
-			_snow_fail_expl(_snow_explanation, \
+			_snow_fail_expl(_snow_explain(expl), \
 				"Expected %s to equal %s, but their lengths don't match", \
 				#a, #b); \
 		} else { \
 			_snow_assert_buf( \
-				0, _snow_explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				0, _snow_explain(expl), &_a, #a, &_b, #b, sizeof(_a)); \
 		} \
 	} while (0)
 
@@ -1396,44 +1398,37 @@ static int _snow_assert_fake(int invert, ...) {
 
 #define assertneq_dbl(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_dbl( \
-			1, "" expl, (a), #a, (b), #b); \
+			1, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define assertneq_ptr(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_ptr( \
-			1, "" expl, (a), #a, (b), #b); \
+			1, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define assertneq_str(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_str( \
-			1, "" expl, (a), #a, (b), #b); \
+			1, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define assertneq_int(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_int( \
-			1, "" expl, (a), #a, (b), #b); \
+			1, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define assertneq_uint(a, b, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_uint( \
-			2, "" expl, (a), #a, (b), #b); \
+			2, _snow_explain(expl), (a), #a, (b), #b); \
 	} while (0)
 #define assertneq_buf(a, b, size, expl...) \
 	do { \
-		snow_fail_update(); \
 		_snow_assert_buf( \
-			1, "" expl, (a), #a, (b), #b, (size)); \
+			1, _snow_explain(expl), (a), #a, (b), #b, (size)); \
 	} while (0)
 #define assertneq_any(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *_snow_explanation = "" expl; \
 		_Pragma("GCC diagnostic push") \
 		_Pragma("GCC diagnostic ignored \"-Wpragmas\"") \
 		_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
@@ -1445,7 +1440,7 @@ static int _snow_assert_fake(int invert, ...) {
 			break; \
 		} else { \
 			_snow_assert_buf( \
-				1, _snow_explanation, &_a, #a, &_b, #b, sizeof(_a)); \
+				1, _snow_explain(expl), &_a, #a, &_b, #b, sizeof(_a)); \
 		} \
 	} while (0)
 
@@ -1456,9 +1451,8 @@ static int _snow_assert_fake(int invert, ...) {
 #define asserteq(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *_snow_explanation = "" expl; \
 		int _snow_ret = _snow_generic_assert(b)( \
-			0, _snow_explanation, (a), #a, (b), #b); \
+			0, _snow_explain(expl), (a), #a, (b), #b); \
 		if (_snow_ret < 0) { \
 			asserteq_any(a, b, expl); \
 		} \
@@ -1471,9 +1465,8 @@ static int _snow_assert_fake(int invert, ...) {
 #define assertneq(a, b, expl...) \
 	do { \
 		snow_fail_update(); \
-		const char *_snow_explanation = "" expl; \
 		int _snow_ret = _snow_generic_assert(b)( \
-			1, _snow_explanation, (a), #a, (b), #b); \
+			1, _snow_explain(expl), (a), #a, (b), #b); \
 		if (_snow_ret < 0) { \
 			assertneq_any(a, b, expl); \
 		} \

@@ -323,5 +323,11 @@ describe(around) {
 	}
 }
 
+describe(misc) {
+	it("can fail in a subroutine call") {
+		assert(compareOutput("./cases/misc fail_in_call", "misc-fail-in-call"));
+	}
+}
+
 snow_main();
 #endif

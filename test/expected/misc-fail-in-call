@@ -1,0 +1,14 @@
+
+Testing fail_in_call:
+✓ Success: asserteq pass (1.00s)
+✕ Failed:  asserteq fail outer:
+    (int) Expected asserteq_call(1, 1) to equal 3, but got 2.
+    in cases/misc.c:17(fail_in_call)
+✕ Failed:  asserteq fail inner:
+    (int) Expected a to equal b, but got 1.
+    in cases/misc.c:5(fail_in_call)
+✕ Failed:  fail inner:
+    It has gone wrong :(
+    in cases/misc.c:11(fail_in_call)
+fail_in_call: Passed 1/4 tests. (6.00s)
+
