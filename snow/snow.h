@@ -26,6 +26,9 @@
 #ifndef SNOW_H
 #define SNOW_H
 
+/* ensure we override standard assert() */
+#include <assert.h>
+
 #ifndef SNOW_ENABLED
 
 #define describe(name) __attribute__((unused)) static void _snow_unused_##name()
