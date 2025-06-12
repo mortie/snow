@@ -1,0 +1,67 @@
+
+Testing g:
+G BEFORE
+✕ Failed:  success (in after_each):
+    G AFTER
+    in cases/around.c:140(g)
+G BEFORE
+✕ Failed:  failure:
+    Assertion failed: 0.
+    in cases/around.c:143(g)
+  Failed:  failure (in after_each):
+    G AFTER
+    in cases/around.c:140(g)
+
+  Testing gg:
+GG BEFORE
+GG AFTER
+  ✓ Success: success (1.00s)
+GG BEFORE
+  ✕ Failed:  failure:
+      Assertion failed: 0.
+      in cases/around.c:153(g.gg)
+GG AFTER
+  gg: Passed 1/2 tests. (4.00s)
+
+  Testing ggg:
+  ✕ Failed:  success (in before_each):
+      GGG BEFORE
+      in cases/around.c:158(g.ggg)
+GGG AFTER
+  ✕ Failed:  failure (in before_each):
+      GGG BEFORE
+      in cases/around.c:158(g.ggg)
+GGG AFTER
+  ggg: Passed 0/2 tests. (3.00s)
+
+  Testing gggg:
+GGGG BEFORE
+  ✕ Failed:  success (in after_each):
+      GGGG AFTER
+      in cases/around.c:172(g.gggg)
+GGGG BEFORE
+  ✕ Failed:  failure:
+      Assertion failed: 0.
+      in cases/around.c:175(g.gggg)
+    Failed:  failure (in after_each):
+      GGGG AFTER
+      in cases/around.c:172(g.gggg)
+  gggg: Passed 0/2 tests. (3.00s)
+
+  Testing ggggg:
+  ✕ Failed:  success (in before_each):
+      GGGGG BEFORE
+      in cases/around.c:180(g.ggggg)
+    Failed:  success (in after_each):
+      GGGGG AFTER
+      in cases/around.c:183(g.ggggg)
+  ✕ Failed:  failure (in before_each):
+      GGGGG BEFORE
+      in cases/around.c:180(g.ggggg)
+    Failed:  failure (in after_each):
+      GGGGG AFTER
+      in cases/around.c:183(g.ggggg)
+  ggggg: Passed 0/2 tests. (3.00s)
+
+g: Passed 1/10 tests. (20.00s)
+

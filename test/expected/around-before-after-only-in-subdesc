@@ -7,8 +7,8 @@ Testing b:
 
   Testing bb:
 BB BEFORE
-  ✓ Success: success (1.00s)
 BB AFTER
+  ✓ Success: success (1.00s)
 BB BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0.

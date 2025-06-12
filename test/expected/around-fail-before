@@ -1,0 +1,64 @@
+
+Testing f:
+✕ Failed:  success (in before_each):
+    F BEFORE
+    in cases/around.c:82(f)
+F AFTER
+✕ Failed:  failure (in before_each):
+    F BEFORE
+    in cases/around.c:82(f)
+F AFTER
+
+  Testing ff:
+FF BEFORE
+FF AFTER
+  ✓ Success: success (1.00s)
+FF BEFORE
+  ✕ Failed:  failure:
+      Assertion failed: 0.
+      in cases/around.c:98(f.ff)
+FF AFTER
+  ff: Passed 1/2 tests. (4.00s)
+
+  Testing fff:
+  ✕ Failed:  success (in before_each):
+      FFF BEFORE
+      in cases/around.c:103(f.fff)
+FFF AFTER
+  ✕ Failed:  failure (in before_each):
+      FFF BEFORE
+      in cases/around.c:103(f.fff)
+FFF AFTER
+  fff: Passed 0/2 tests. (3.00s)
+
+  Testing ffff:
+FFFF BEFORE
+  ✕ Failed:  success (in after_each):
+      FFFF AFTER
+      in cases/around.c:117(f.ffff)
+FFFF BEFORE
+  ✕ Failed:  failure:
+      Assertion failed: 0.
+      in cases/around.c:120(f.ffff)
+    Failed:  failure (in after_each):
+      FFFF AFTER
+      in cases/around.c:117(f.ffff)
+  ffff: Passed 0/2 tests. (3.00s)
+
+  Testing fffff:
+  ✕ Failed:  success (in before_each):
+      FFFFF BEFORE
+      in cases/around.c:125(f.fffff)
+    Failed:  success (in after_each):
+      FFFFF AFTER
+      in cases/around.c:128(f.fffff)
+  ✕ Failed:  failure (in before_each):
+      FFFFF BEFORE
+      in cases/around.c:125(f.fffff)
+    Failed:  failure (in after_each):
+      FFFFF AFTER
+      in cases/around.c:128(f.fffff)
+  fffff: Passed 0/2 tests. (3.00s)
+
+f: Passed 1/10 tests. (20.00s)
+

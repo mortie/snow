@@ -185,9 +185,13 @@ only deferred expressions defined before the point of failure will be executed.
 
 Code to run before each test case.
 
+Failures in `before_each()` are treated like test case failures.
+
 ### after\_each() \<block>
 
 Code to run after each test case.
+
+Failures in `after_each()` are treated like test case failures.
 
 ### snow\_main()
 

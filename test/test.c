@@ -321,6 +321,14 @@ describe(around) {
 	it("shadows before_each and after_each from the parent in subdesc") {
 		assert(compareOutput("./cases/around e", "around-subdesc-before-after-shadow"));
 	}
+
+	it("handles failure in before_each") {
+		assert(compareOutput("./cases/around f", "around-fail-before"));
+	}
+
+	it("handles failure in after_each") {
+		assert(compareOutput("./cases/around g", "around-fail-after"));
+	}
 }
 
 snow_main();

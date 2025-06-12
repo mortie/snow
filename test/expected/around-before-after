@@ -1,8 +1,8 @@
 
 Testing a:
 A BEFORE
-✓ Success: success (1.00s)
 A AFTER
+✓ Success: success (1.00s)
 A BEFORE
 ✕ Failed:  failure:
     Assertion failed: 0.

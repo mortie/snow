@@ -1,8 +1,8 @@
 
 Testing e:
 E BEFORE
-✓ Success: success (1.00s)
 E AFTER
+✓ Success: success (1.00s)
 E BEFORE
 ✕ Failed:  failure:
     Assertion failed: 0.
@@ -11,8 +11,8 @@ E AFTER
 
   Testing ee:
 EE BEFORE
-  ✓ Success: success (1.00s)
 EE AFTER
+  ✓ Success: success (1.00s)
 EE BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0.

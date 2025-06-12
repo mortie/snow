@@ -9,8 +9,8 @@ C BEFORE
 
   Testing cc:
 C BEFORE
-  ✓ Success: success (1.00s)
 CC AFTER
+  ✓ Success: success (1.00s)
 C BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0.

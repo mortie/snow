@@ -1,8 +1,8 @@
 
 Testing d:
 D BEFORE
-✓ Success: success (1.00s)
 D AFTER
+✓ Success: success (1.00s)
 D BEFORE
 ✕ Failed:  failure:
     Assertion failed: 0.
@@ -11,8 +11,8 @@ D AFTER
 
   Testing dd:
 D BEFORE
-  ✓ Success: success (1.00s)
 D AFTER
+  ✓ Success: success (1.00s)
 D BEFORE
   ✕ Failed:  failure:
       Assertion failed: 0.

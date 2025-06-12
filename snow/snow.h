@@ -441,16 +441,30 @@ static char *_snow_print_case_failure(void) {
 	if (_snow.print.need_cr)
 		_snow_print(" \r");
 
+	const char *mark = "✕";
+	const char *where = "";
+
+	if (!_snow.in_case) {
+		mark = " ";
+	}
+
+	if (_snow.in_before_each) {
+		where = " (in before_each)";
+	}
+	if (_snow.in_after_each) {
+		where = " (in after_each)";
+	}
+
 	if (_snow.opts[_SNOW_OPT_COLOR].boolval) {
 		_snow_print(
-			"%s" SNOW_COLOR_BOLD SNOW_COLOR_FAIL "✕ "
+			"%s" SNOW_COLOR_BOLD SNOW_COLOR_FAIL "%s "
 			SNOW_COLOR_RESET SNOW_COLOR_FAIL "Failed:  "
 			SNOW_COLOR_RESET SNOW_COLOR_DESC "%s"
-			SNOW_COLOR_RESET ":\n",
-			spaces, _snow.current_case.name);
+			SNOW_COLOR_RESET "%s:\n",
+			spaces, mark, _snow.current_case.name, where);
 	} else {
 		_snow_print(
-			"%s✕ Failed:  %s:\n", spaces, _snow.current_case.name);
+			"%s%s Failed:  %s%s:\n", spaces, mark, _snow.current_case.name, where);
 	}
 
 	return spaces;
@@ -532,6 +546,7 @@ static void _snow_print_desc_end(void) {
 		_snow_print("\n"); \
 		_snow_print("%s    in %s:%i(%s)\n", spaces, \
 			_snow.filename, _snow.linenum, _snow.current_desc->full_name); \
+		_snow.exit_code = EXIT_FAILURE; \
 		_snow_case_end(0); \
 	} while (0)
 
@@ -679,6 +694,7 @@ static void _snow_desc_end(void) {
  */
 #define _snow_case_begin(casename) \
 	do { \
+		int case_done = 0; \
 		if (_snow.opts[_SNOW_OPT_LIST].boolval) break; \
 		if (!_snow.current_desc->enabled) break; \
 		if (!_snow.current_desc->printed) _snow_print_desc_begin(); \
@@ -696,15 +712,22 @@ static void _snow_desc_end(void) {
 			} \
 			_snow.in_before_each = 0; \
 		} \
-		/* Set jump point which _snow_case_end */ \
-		/* (and each defer) will jump back to */ \
-		if (setjmp(_snow.current_case.done_jmp_ret) == 1) { \
-			while (_snow.current_case.defers.length > 0) { \
-				if (setjmp(_snow.current_case.defer_jmp_ret) == 0) { \
-					jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers); \
-					longjmp(*jmp, 1); \
+		if (_snow.in_case) { \
+			/* Set jump point which _snow_case_end */ \
+			/* (and each defer) will jump back to */ \
+			if (setjmp(_snow.current_case.done_jmp_ret) == 1) { \
+				while (_snow.current_case.defers.length > 0) { \
+					if (setjmp(_snow.current_case.defer_jmp_ret) == 0) { \
+						jmp_buf *jmp = (jmp_buf *)_snow_arr_pop(&_snow.current_case.defers); \
+						longjmp(*jmp, 1); \
+					} \
 				} \
+				case_done = 1; \
 			} \
+		} else { \
+			case_done = 1; \
+		} \
+		if (case_done) { \
 			/* Run after_each */ \
 			if (_snow.current_desc->has_after_jmp) { \
 				if (setjmp(_snow.current_case.after_jmp_ret) == 0) { \
@@ -713,10 +736,16 @@ static void _snow_desc_end(void) {
 				} \
 				_snow.in_after_each = 0; \
 			} \
+			if (_snow.in_case && !_snow.rerunning_case) { \
+				_snow.current_case.success = 1; \
+				_snow.current_desc->num_success += 1; \
+				_snow_print_case_success(); \
+			} \
 			/* Either re-run or just go back */ \
 			int should_rerun = _snow.opts[_SNOW_OPT_RERUN_FAILED].boolval && \
 				!_snow.rerunning_case && !_snow.current_case.success; \
 			if (should_rerun) { \
+				_snow.in_case = 1; \
 				/* Run before_each again */ \
 				if (_snow.current_desc->has_before_jmp) { \
 					if (setjmp(_snow.current_case.before_jmp_ret) == 0) { \
@@ -743,16 +772,15 @@ static void _snow_case_end(int success) {
 	if (!_snow.in_case)
 		return;
 
-	if (!_snow.rerunning_case) {
-		_snow.current_case.success = success;
-		if (success) {
-			_snow.current_desc->num_success += 1;
-			_snow_print_case_success();
-		} else {
-			_snow.exit_code = EXIT_FAILURE;
-		}
-	}
+	/* stop current test case in case of failure */
+	_snow.in_case = success;
 
+	if (_snow.in_before_each) {
+		longjmp(_snow.current_case.before_jmp_ret, 1);
+	}
+	if (_snow.in_after_each) {
+		longjmp(_snow.current_case.after_jmp_ret, 1);
+	}
 	longjmp(_snow.current_case.done_jmp_ret, 1);
 }
 
